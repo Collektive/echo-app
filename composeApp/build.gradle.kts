@@ -50,6 +50,8 @@ kotlin {
             implementation(libs.kmqtt.client)
             implementation(libs.logging)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.material.icons.extended)
+            implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
