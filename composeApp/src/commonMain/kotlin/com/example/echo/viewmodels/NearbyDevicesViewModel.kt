@@ -124,8 +124,7 @@ class NearbyDevicesViewModel(
             val currentLocation = _currentLocationFlow.value!! // GPS is mandatory, should never be null
 
             log.i { "Current GPS location: ${currentLocation.latitude}, ${currentLocation.longitude}" }
-            val neighborsWithDistances = distances.toMap().size
-            val totalNeighborsDiscovered = neighborMap.toMap().size
+
 
             log.i { "GPS-based distances calculated: ${distances.toMap()}" }
 
@@ -323,33 +322,6 @@ class NearbyDevicesViewModel(
                     is LocationError.Unknown -> log.e { "Unknown GPS error: ${e.cause?.message}" }
                 }
                 throw e // Re-throw since GPS is mandatory
-            } catch (e: Exception) {
-                _locationErrorFlow.value = LocationError.Unknown(e)
-                log.e { "Unexpected GPS error: ${e.message}" }
-                throw LocationError.Unknown(e)
-            }
-        }
-    }
-
-    fun getCurrentLocation() {
-        scope.launch {
-            try {
-                val location = locationService.getCurrentLocation()
-                    ?: throw LocationError.ServiceUnavailable
-
-                _currentLocationFlow.value = location
-                _locationErrorFlow.value = null
-
-                // Update MQTT mailbox with current location
-                mqttMailbox?.updateCurrentLocation(location)
-
-                log.i {
-                    "Current location: ${location.latitude}, ${location.longitude} (accuracy: ${location.accuracy}m)"
-                }
-            } catch (e: LocationError) {
-                _locationErrorFlow.value = e
-                log.e { "Failed to get GPS location - app requires GPS" }
-                throw e
             } catch (e: Exception) {
                 _locationErrorFlow.value = LocationError.Unknown(e)
                 log.e { "Unexpected GPS error: ${e.message}" }

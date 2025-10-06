@@ -190,11 +190,6 @@ class MqttMailbox private constructor(
     fun getNeighborLocation(neighborId: Uuid): Location? = neighborLocations[neighborId]
 
     /**
-     * Get all neighbor locations
-     */
-    fun getAllNeighborLocations(): Map<Uuid, Location> = neighborLocations.toMap()
-
-    /**
      * Companion object to create a new instance of [MqttMailbox].
      */
     companion object {

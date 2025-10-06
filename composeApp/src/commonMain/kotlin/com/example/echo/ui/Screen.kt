@@ -57,7 +57,6 @@ import kotlin.uuid.Uuid
 @Composable
 fun Screen(
     modifier: Modifier,
-    devices: Set<Uuid>,
     connection: NearbyDevicesViewModel.ConnectionState,
     uuid: Uuid,
     viewModel: NearbyDevicesViewModel,
@@ -67,7 +66,7 @@ fun Screen(
     var messageText by remember { mutableStateOf("") }
 
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
+    rememberCoroutineScope()
 
     // Collect messages and sending state from ViewModel
     val messages by viewModel.messagesFlow.collectAsState()
@@ -332,7 +331,7 @@ fun MessageItem(message: ChatMessage, uuid: Uuid) {
                 modifier = Modifier.padding(12.dp),
             ) {
                 Text(
-                    text = "Device: ${message.sender.toString().take(8)}...",
+                    text = "Device: ${message.sender}",
                     color = if (message.sender == uuid) {
                         MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)
                     } else {

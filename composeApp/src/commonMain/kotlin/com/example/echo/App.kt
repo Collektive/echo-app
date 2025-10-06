@@ -66,7 +66,6 @@ fun CollektiveNearbyDevices(modifier: Modifier) {
 
         Screen(
             modifier = modifier,
-            devices,
             connection,
             uuid,
             vm,
