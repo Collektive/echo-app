@@ -100,12 +100,3 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
-
-ktlint {
-    android.set(true)
-    ignoreFailures.set(false)
-    filter {
-        exclude { element -> element.file.path.contains("generated/") }
-        exclude { element -> element.file.path.contains("/build/") }
-    }
-}
