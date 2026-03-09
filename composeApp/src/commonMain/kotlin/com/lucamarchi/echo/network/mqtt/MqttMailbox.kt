@@ -1,6 +1,12 @@
 package it.unibo.collektive.echo.network.mqtt
 
 import com.diamondedge.logging.logging
+import io.github.davidepianca98.MQTTClient
+import io.github.davidepianca98.mqtt.MQTTVersion
+import io.github.davidepianca98.mqtt.Subscription
+import io.github.davidepianca98.mqtt.packets.Qos
+import io.github.davidepianca98.mqtt.packets.mqttv5.ReasonCode
+import io.github.davidepianca98.mqtt.packets.mqttv5.SubscriptionOptions
 import it.unibo.collektive.echo.MQTT_HOST
 import it.unibo.collektive.echo.PORT_NUMBER_BROKER
 import it.unibo.collektive.echo.WEBSOCKET_ENDPOINT
@@ -8,12 +14,6 @@ import it.unibo.collektive.echo.location.Location
 import it.unibo.collektive.echo.models.DeviceLocation
 import it.unibo.collektive.echo.models.DeviceLocationHeartbeat
 import it.unibo.collektive.echo.network.AbstractSerializerMailbox
-import io.github.davidepianca98.MQTTClient
-import io.github.davidepianca98.mqtt.MQTTVersion
-import io.github.davidepianca98.mqtt.Subscription
-import io.github.davidepianca98.mqtt.packets.Qos
-import io.github.davidepianca98.mqtt.packets.mqttv5.ReasonCode
-import io.github.davidepianca98.mqtt.packets.mqttv5.SubscriptionOptions
 import it.unibo.collektive.networking.Message
 import it.unibo.collektive.networking.SerializedMessage
 import kotlinx.coroutines.CoroutineDispatcher

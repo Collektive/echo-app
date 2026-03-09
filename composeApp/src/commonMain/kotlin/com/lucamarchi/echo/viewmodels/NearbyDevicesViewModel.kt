@@ -1,6 +1,9 @@
 package it.unibo.collektive.echo.viewmodels
 
 import com.diamondedge.logging.logging
+import it.unibo.collektive.Collektive
+import it.unibo.collektive.aggregate.Field
+import it.unibo.collektive.aggregate.api.neighboring
 import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
 import it.unibo.collektive.echo.DEFAULT_MAX_TIME
 import it.unibo.collektive.echo.MQTT_HOST
@@ -10,9 +13,6 @@ import it.unibo.collektive.echo.location.LocationError
 import it.unibo.collektive.echo.location.LocationService
 import it.unibo.collektive.echo.models.ChatMessage
 import it.unibo.collektive.echo.network.mqtt.MqttMailbox
-import it.unibo.collektive.Collektive
-import it.unibo.collektive.aggregate.Field
-import it.unibo.collektive.aggregate.api.neighboring
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

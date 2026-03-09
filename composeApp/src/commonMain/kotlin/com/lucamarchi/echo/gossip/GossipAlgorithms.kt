@@ -1,11 +1,10 @@
 package it.unibo.collektive.echo.gossip
 
-import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
-import it.unibo.collektive.echo.DEFAULT_MAX_TIME
 import it.unibo.collektive.aggregate.Field
 import it.unibo.collektive.aggregate.api.Aggregate
 import it.unibo.collektive.aggregate.api.share
-import kotlin.collections.iterator
+import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
+import it.unibo.collektive.echo.DEFAULT_MAX_TIME
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
