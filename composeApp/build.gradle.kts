@@ -6,95 +6,98 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    id("org.jlleitschuh.gradle.ktlint") version "13.0.0"
-    id("it.unibo.collektive.collektive-plugin") version "26.1.2"
+    alias(libs.plugins.ktlintPlugin)
+    alias(libs.plugins.collektive)
     kotlin("plugin.serialization") version "2.2.10"
 }
 
 kotlin {
+    jvmToolchain(17)
+
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
-            freeCompilerArgs.addAll("-Xexpect-actual-classes")
+            jvmTarget.set(JvmTarget.JVM_17)
+            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "ComposeApp"
+    // Configure all iOS targets in one go
+    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "ComposeAppFramework"
             isStatic = true
         }
-        iosTarget.compilerOptions {
-            freeCompilerArgs.addAll("-Xexpect-actual-classes")
-        }
-    }
-
-    compilerOptions {
-        freeCompilerArgs.addAll("-Xexpect-actual-classes")
     }
 
     sourceSets {
-        androidMain.dependencies {
-            implementation(compose.preview)
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.play.services.location)
+        val commonMain by getting {
+            dependencies {
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(compose.components.uiToolingPreview)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
+                implementation(libs.androidx.lifecycle.runtimeCompose)
+                implementation(libs.bundles.collektive)
+                implementation(libs.kmqtt.common)
+                implementation(libs.kmqtt.client)
+                implementation(libs.logging)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.material.icons.extended)
+                implementation(libs.kotlinx.datetime)
+                implementation(libs.geo.compose)
+                implementation(libs.permissions.compose)
+            }
         }
-        commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.collektive.dsl)
-            implementation(libs.collektive.stdlib)
-            implementation(libs.kmqtt.common)
-            implementation(libs.kmqtt.client)
-            implementation(libs.logging)
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.material.icons.extended)
-            implementation(libs.kotlinx.datetime)
-            implementation(libs.geo.compose)
-            implementation(libs.permissions.compose)
+
+        val androidMain by getting {
+            dependencies {
+                implementation(compose.preview)
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.play.services.location)
+            }
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
         }
     }
 }
 
 android {
-    namespace = "com.lucamarchi.echo"
+    namespace = "it.unibo.collektive.echo"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.lucamarchi.echo"
+        applicationId = "it.unibo.collektive.echo"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
     buildTypes {
-        getByName("release") {
+        release {
             isMinifyEnabled = false
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     lint {
         disable += "NullSafeMutableLiveData"
     }
