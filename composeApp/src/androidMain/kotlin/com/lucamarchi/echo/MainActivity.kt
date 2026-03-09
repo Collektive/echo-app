@@ -1,4 +1,4 @@
-package com.lucamarchi.echo
+package it.unibo.collektive.echo
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

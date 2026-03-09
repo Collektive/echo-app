@@ -1,15 +1,15 @@
-package com.lucamarchi.echo.viewmodels
+package it.unibo.collektive.echo.viewmodels
 
 import com.diamondedge.logging.logging
-import com.lucamarchi.echo.DEFAULT_MAX_DISTANCE
-import com.lucamarchi.echo.DEFAULT_MAX_TIME
-import com.lucamarchi.echo.MQTT_HOST
-import com.lucamarchi.echo.gossip.chatMultipleSources
-import com.lucamarchi.echo.location.Location
-import com.lucamarchi.echo.location.LocationError
-import com.lucamarchi.echo.location.LocationService
-import com.lucamarchi.echo.models.ChatMessage
-import com.lucamarchi.echo.network.mqtt.MqttMailbox
+import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
+import it.unibo.collektive.echo.DEFAULT_MAX_TIME
+import it.unibo.collektive.echo.MQTT_HOST
+import it.unibo.collektive.echo.gossip.chatMultipleSources
+import it.unibo.collektive.echo.location.Location
+import it.unibo.collektive.echo.location.LocationError
+import it.unibo.collektive.echo.location.LocationService
+import it.unibo.collektive.echo.models.ChatMessage
+import it.unibo.collektive.echo.network.mqtt.MqttMailbox
 import it.unibo.collektive.Collektive
 import it.unibo.collektive.aggregate.Field
 import it.unibo.collektive.aggregate.api.neighboring

@@ -1,4 +1,4 @@
-package com.lucamarchi.echo
+package it.unibo.collektive.echo
 
 /**
  * Default max propagation distance in meters.

@@ -1,4 +1,4 @@
-package com.lucamarchi.echo.location
+package it.unibo.collektive.echo.location
 
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime

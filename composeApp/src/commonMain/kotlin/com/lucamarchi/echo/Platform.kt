@@ -1,4 +1,4 @@
-package com.lucamarchi.echo
+package it.unibo.collektive.echo
 
 interface Platform {
     val name: String

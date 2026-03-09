@@ -1,4 +1,4 @@
-package com.lucamarchi.echo
+package it.unibo.collektive.echo
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,10 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.lucamarchi.echo.location.LocationPermissionHandler
-import com.lucamarchi.echo.ui.Screen
-import com.lucamarchi.echo.ui.TopBar
-import com.lucamarchi.echo.viewmodels.NearbyDevicesViewModel
+import it.unibo.collektive.echo.location.LocationPermissionHandler
+import it.unibo.collektive.echo.ui.Screen
+import it.unibo.collektive.echo.ui.TopBar
+import it.unibo.collektive.echo.viewmodels.NearbyDevicesViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.uuid.ExperimentalUuidApi
 

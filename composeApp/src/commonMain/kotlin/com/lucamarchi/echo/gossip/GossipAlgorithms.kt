@@ -1,7 +1,7 @@
-package com.lucamarchi.echo.gossip
+package it.unibo.collektive.echo.gossip
 
-import com.lucamarchi.echo.DEFAULT_MAX_DISTANCE
-import com.lucamarchi.echo.DEFAULT_MAX_TIME
+import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
+import it.unibo.collektive.echo.DEFAULT_MAX_TIME
 import it.unibo.collektive.aggregate.Field
 import it.unibo.collektive.aggregate.api.Aggregate
 import it.unibo.collektive.aggregate.api.share

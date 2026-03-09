@@ -1,4 +1,4 @@
-package com.lucamarchi.echo
+package it.unibo.collektive.echo
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

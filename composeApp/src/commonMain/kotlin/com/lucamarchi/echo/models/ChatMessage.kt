@@ -1,6 +1,6 @@
-package com.lucamarchi.echo.models
+package it.unibo.collektive.echo.models
 
-import com.lucamarchi.echo.serialization.UuidSerializer
+import it.unibo.collektive.echo.serialization.UuidSerializer
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

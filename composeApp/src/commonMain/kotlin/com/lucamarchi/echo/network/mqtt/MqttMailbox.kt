@@ -1,13 +1,13 @@
-package com.lucamarchi.echo.network.mqtt
+package it.unibo.collektive.echo.network.mqtt
 
 import com.diamondedge.logging.logging
-import com.lucamarchi.echo.MQTT_HOST
-import com.lucamarchi.echo.PORT_NUMBER_BROKER
-import com.lucamarchi.echo.WEBSOCKET_ENDPOINT
-import com.lucamarchi.echo.location.Location
-import com.lucamarchi.echo.models.DeviceLocation
-import com.lucamarchi.echo.models.DeviceLocationHeartbeat
-import com.lucamarchi.echo.network.AbstractSerializerMailbox
+import it.unibo.collektive.echo.MQTT_HOST
+import it.unibo.collektive.echo.PORT_NUMBER_BROKER
+import it.unibo.collektive.echo.WEBSOCKET_ENDPOINT
+import it.unibo.collektive.echo.location.Location
+import it.unibo.collektive.echo.models.DeviceLocation
+import it.unibo.collektive.echo.models.DeviceLocationHeartbeat
+import it.unibo.collektive.echo.network.AbstractSerializerMailbox
 import io.github.davidepianca98.MQTTClient
 import io.github.davidepianca98.mqtt.MQTTVersion
 import io.github.davidepianca98.mqtt.Subscription

@@ -1,3 +1,3 @@
-package com.lucamarchi.echo.location
+package it.unibo.collektive.echo.location
 
 actual fun createLocationService(): LocationService = PlatformLocationService()

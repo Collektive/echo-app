@@ -1,4 +1,4 @@
-package com.lucamarchi.echo.location
+package it.unibo.collektive.echo.location
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents

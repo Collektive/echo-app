@@ -1,6 +1,6 @@
-package com.lucamarchi.echo.gossip
+package it.unibo.collektive.echo.gossip
 
-import com.lucamarchi.echo.serialization.UuidSerializer
+import it.unibo.collektive.echo.serialization.UuidSerializer
 import kotlinx.serialization.Serializable
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid

@@ -1,4 +1,4 @@
-package com.lucamarchi.echo.location
+package it.unibo.collektive.echo.location
 
 /**
  * Get location (position longitude and latitude) on specific platforms.

@@ -1,4 +1,4 @@
-package com.lucamarchi.echo.serialization
+package it.unibo.collektive.echo.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

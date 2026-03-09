@@ -1,6 +1,6 @@
-package com.lucamarchi.echo.models
+package it.unibo.collektive.echo.models
 
-import com.lucamarchi.echo.location.Location
+import it.unibo.collektive.echo.location.Location
 import kotlinx.serialization.Serializable
 import kotlin.uuid.ExperimentalUuidApi
 

@@ -1,4 +1,4 @@
-package com.lucamarchi.echo.network
+package it.unibo.collektive.echo.network
 
 import it.unibo.collektive.aggregate.api.DataSharingMethod
 import it.unibo.collektive.aggregate.api.Serialize
