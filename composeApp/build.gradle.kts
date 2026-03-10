@@ -7,12 +7,19 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ktlintPlugin)
+    alias(libs.plugins.kotlin.qa)
     alias(libs.plugins.collektive)
     kotlin("plugin.serialization") version "2.2.10"
 }
 
 kotlin {
     jvmToolchain(17)
+
+    // Disable warnings-as-errors (set by kotlin-qa plugin)
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    compilerOptions {
+        allWarningsAsErrors.set(false)
+    }
 
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -105,4 +112,28 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+}
+
+// Force-disable warnings-as-errors after all plugins (kotlin-qa) have configured tasks
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    compilerOptions {
+        allWarningsAsErrors.set(false)
+    }
+}
+
+// Exclude generated sources from detekt analysis
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    exclude("**/generated/**")
+}
+tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
+    exclude("**/generated/**")
+}
+
+// Exclude generated sources from CPD (copy-paste detection) analysis
+afterEvaluate {
+    tasks.withType<de.aaschmid.gradle.plugins.cpd.Cpd>().configureEach {
+        source = fileTree(projectDir) {
+            include("src/**/*.kt")
+        }
+    }
 }
