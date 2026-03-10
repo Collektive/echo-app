@@ -68,7 +68,9 @@ actual class PlatformLocationService : LocationService {
                     locationManager.stopUpdatingLocation()
                     when (error.code) {
                         kCLErrorDenied -> continuation.resumeWithException(LocationError.PermissionDenied)
+
                         kCLErrorLocationUnknown -> continuation.resume(null)
+
                         else -> continuation.resumeWithException(
                             LocationError.Unknown(RuntimeException(error.localizedDescription)),
                         )
@@ -116,9 +118,11 @@ actual class PlatformLocationService : LocationService {
             onLocationError = { error ->
                 when (error.code) {
                     kCLErrorDenied -> throw LocationError.PermissionDenied
+
                     kCLErrorLocationUnknown -> {
                         // Continue trying, this is just a temporary failure
                     }
+
                     else -> throw LocationError.Unknown(RuntimeException(error.localizedDescription))
                 }
             },
@@ -146,22 +150,27 @@ actual class PlatformLocationService : LocationService {
                 println("Location permission: Authorized when in use")
                 return true
             }
+
             kCLAuthorizationStatusAuthorizedAlways -> {
                 println("Location permission: Authorized always")
                 return true
             }
+
             kCLAuthorizationStatusNotDetermined -> {
                 println("Location permission: Not determined - requesting permission")
                 return false
             }
+
             kCLAuthorizationStatusDenied -> {
                 println("Location permission: Denied")
                 return false
             }
+
             kCLAuthorizationStatusRestricted -> {
                 println("Location permission: Restricted")
                 return false
             }
+
             else -> {
                 println("Location permission: Unknown status")
                 return false
