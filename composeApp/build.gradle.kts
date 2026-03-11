@@ -9,16 +9,14 @@ plugins {
     alias(libs.plugins.ktlintPlugin)
     alias(libs.plugins.kotlin.qa)
     alias(libs.plugins.collektive)
-    kotlin("plugin.serialization") version "2.2.10"
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
     jvmToolchain(17)
 
-    // Disable warnings-as-errors (set by kotlin-qa plugin)
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
-        allWarningsAsErrors.set(false)
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
@@ -116,6 +114,16 @@ dependencies {
 
 // Exclude generated sources from detekt and CPD analysis
 afterEvaluate {
+    // Compose Multiplatform ships its own copies of androidx.* libraries (annotation, collection,
+    // lifecycle, savedstate, runtime) which produce unavoidable "duplicate unique_name" KLIB warnings.
+    // With -Werror (set by kotlin-qa) these become errors, but only in metadata compilation tasks.
+    // Disable allWarningsAsErrors on those tasks only, keeping it active everywhere else.
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+        if (name.contains("Metadata", ignoreCase = true)) {
+            compilerOptions.allWarningsAsErrors.set(false)
+        }
+    }
+
     tasks.matching { it.name.startsWith("detekt") }.configureEach {
         if (this is SourceTask) {
             exclude("**/generated/**")
