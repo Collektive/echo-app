@@ -1,4 +1,5 @@
 platform :android do
+
   lane :lint do
     gradle(
       task: "ktlintCheck",
@@ -12,56 +13,63 @@ platform :android do
       project_dir: "./"
     )
   end
-  
+
+  # Build signed release APK + AAB
   lane :release do
     gradle(
-      task: "composeApp:bundleRelease",
+      task: "composeApp:assembleRelease composeApp:bundleRelease",
       project_dir: "./"
     )
   end
 
+  # ──────────────────────────────────────────────────────────────
+  # Deploy AAB to Google Play Store (internal track)
+  # ──────────────────────────────────────────────────────────────
+  # todo:
+  # 1. Create service account Google Play, download json key
+  # 2. set path to JSON key in ENV variable SUPPLY_JSON_KEY, e.g.:
+  #    export SUPPLY_JSON_KEY="/path/to/your/service-account.json"
+  # or pass is as parameter
+  # 3. Exec: bundle exec fastlane android deploy
+  # ──────────────────────────────────────────────────────────────
   lane :deploy do
+    release  # build APK + AAB
+
+    upload_to_play_store(
+      package_name: "it.unibo.collektive.echo",
+      aab: "composeApp/build/outputs/bundle/release/composeApp-release.aab",
+      track: "internal",           # Options: internal, alpha, beta, production
+      release_status: "draft",     # Options: completed, draft, halted, inProgress
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
   end
 
 end
 
 platform :ios do
+
   lane :build do
     gradle(
       task: "composeApp:linkDebugFrameworkIosArm64",
       project_dir: "./"
     )
-    
   end
 
-    lane :ios_release do
-      gradle(
-        task: "composeApp:linkReleaseFrameworkIosArm64",
-        project_dir: "./"
-      )
-      build_app(
-        project: './iosApp/iosApp.xcodeproj',
-        scheme: "iosApp",
-        configuration: "Release",
-        destination: "generic/platform=iOS"
-      )
-
-    end
-
-    lane :release do
-        gradle(
-          task: "composeApp:linkReleaseFrameworkIosArm64",
-          project_dir: "./"
-        )
-
-        build_app(
-          project: './iosApp/iosApp.xcodeproj',
-          scheme: 'iosApp',
-          configuration: 'Release',
-          destination: 'generic/platform=iOS',
-          allowProvisioningUpdates: true
-        )
-    end
+  lane :release do
+    gradle(
+      task: "composeApp:linkReleaseFrameworkIosArm64",
+      project_dir: "./"
+    )
+    build_app(
+      project: "./iosApp/iosApp.xcodeproj",
+      scheme: "iosApp",
+      configuration: "Release",
+      destination: "generic/platform=iOS",
+      allowProvisioningUpdates: true
+    )
+  end
 
 end
 
