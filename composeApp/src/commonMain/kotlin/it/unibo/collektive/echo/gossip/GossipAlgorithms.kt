@@ -3,8 +3,11 @@ package it.unibo.collektive.echo.gossip
 import it.unibo.collektive.aggregate.Field
 import it.unibo.collektive.aggregate.api.Aggregate
 import it.unibo.collektive.aggregate.api.share
+import it.unibo.collektive.aggregate.toMap
+import it.unibo.collektive.aggregate.values
 import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
 import it.unibo.collektive.echo.DEFAULT_MAX_TIME
+import it.unibo.collektive.stdlib.collapse.fold
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -39,10 +42,10 @@ internal fun Aggregate<Uuid>.gossipChat(
     }
 
     // Share messages with neighbors
-    val distanceMap = distances.toMap()
+    val distanceMap = distances.all.toMap()
     val result = share(localMessage) { neighborMessages: Field<Uuid, Message?> ->
         var bestMessage = localMessage
-        for ((neighborId, neighborMessage) in neighborMessages.toMap()) {
+        for ((neighborId, neighborMessage) in neighborMessages.neighbors.toMap()) {
             if (neighborMessage != null && neighborMessage.content.isNotEmpty()) {
                 val distanceToNeighbor = distanceMap.getOrElse(neighborId) { Double.MAX_VALUE }
                 val totalDistance = neighborMessage.distanceFromSource + distanceToNeighbor
@@ -91,7 +94,7 @@ internal fun Aggregate<Uuid>.chatMultipleSources(
      */
     val localSources: Set<Uuid> = if (isSource) setOf(localId) else emptySet()
     val sources: Set<Uuid> = share(localSources) { neighborSets: Field<Uuid, Set<Uuid>> ->
-        neighborSets.neighborsValues.fold(localSources) { accumulator, neighborSet ->
+        neighborSets.neighbors.values.fold(localSources) { accumulator, neighborSet ->
             accumulator + neighborSet
         }
     }

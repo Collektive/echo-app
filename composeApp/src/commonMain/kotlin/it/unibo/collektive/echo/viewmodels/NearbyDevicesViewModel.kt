@@ -4,6 +4,8 @@ import com.diamondedge.logging.logging
 import it.unibo.collektive.Collektive
 import it.unibo.collektive.aggregate.Field
 import it.unibo.collektive.aggregate.api.neighboring
+import it.unibo.collektive.aggregate.ids
+import it.unibo.collektive.aggregate.toMap
 import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
 import it.unibo.collektive.echo.DEFAULT_MAX_TIME
 import it.unibo.collektive.echo.MQTT_HOST
@@ -145,7 +147,7 @@ class NearbyDevicesViewModel(
         ) {
             // Get neighboring devices
             val neighborMap = neighboring(localId)
-            val neighbors = neighborMap.neighbors.toSet()
+            val neighbors = neighborMap.neighbors.ids.set
 
             // Get current time
             val currentTime = Clock.System.now().epochSeconds.toDouble()
@@ -170,7 +172,7 @@ class NearbyDevicesViewModel(
 
             log.i { "Current GPS location: ${currentLocation.latitude}, ${currentLocation.longitude}" }
 
-            log.i { "GPS-based distances calculated: ${distances.toMap()}" }
+            log.i { "GPS-based distances calculated: ${distances.all.toMap()}" }
 
             // Collect all messages from all potential sources using chatMultipleSources
             val allSourceMessages = chatMultipleSources(
@@ -390,7 +392,8 @@ class NearbyDevicesViewModel(
 
                     is LocationError.Unknown -> log.e { "Unknown GPS error: ${e.cause?.message}" }
                 }
-                throw e // Re-throw since GPS is mandatory
+                // Don't re-throw: the error is exposed via locationErrorFlow for the UI.
+                // Re-throwing would crash the app, especially on iOS simulator without GPS.
             } catch (e: CancellationException) {
                 throw e
             } catch (
@@ -399,7 +402,7 @@ class NearbyDevicesViewModel(
             ) {
                 _locationErrorFlow.value = LocationError.Unknown(e)
                 log.e { "Unexpected GPS error: ${e.message}" }
-                throw LocationError.Unknown(e)
+                // Don't re-throw: same reason as above.
             }
         }
     }
@@ -430,7 +433,7 @@ class NearbyDevicesViewModel(
             "MQTT mailbox is required but not available"
         }
         // Filter out this device itself and neighbors without GPS data
-        val actualNeighbors = neighborMap.neighbors.filter { id ->
+        val actualNeighbors = neighborMap.neighbors.ids.list.filter { id ->
             // Skip if this is the same device
             if (id == deviceId) {
                 log.d { "Excluding self ($id) from neighbor calculations" }
