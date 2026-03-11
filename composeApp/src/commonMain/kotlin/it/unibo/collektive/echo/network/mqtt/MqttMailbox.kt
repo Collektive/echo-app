@@ -18,6 +18,7 @@ import it.unibo.collektive.networking.Message
 import it.unibo.collektive.networking.SerializedMessage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -45,7 +46,7 @@ class MqttMailbox private constructor(
     private val dispatcher: CoroutineDispatcher,
     initialLocation: Location, // GPS is mandatory - must be provided at creation
 ) : AbstractSerializerMailbox<Uuid>(deviceId, serializer, retentionTime) {
-    private val internalScope = CoroutineScope(dispatcher)
+    private val internalScope = CoroutineScope(dispatcher + SupervisorJob())
     private var mqttClient: MQTTClient? = null
 
     /** Logger instance for MQTT mailbox diagnostics. */
@@ -59,64 +60,66 @@ class MqttMailbox private constructor(
     private val jsonSerializer = Json { ignoreUnknownKeys = true }
 
     /**
+     * Handles an incoming MQTT message based on its [topic] and [payload].
+     */
+    private fun handleIncomingMessage(topic: String, payload: ByteArray?) {
+        when {
+            topic.startsWith(HEARTBEAT_PREFIX) -> {
+                // Handle heartbeat with location information
+                val neighborDeviceId = Uuid.Companion.parse(topic.split("/").last())
+                addNeighbor(neighborDeviceId)
+
+                // Try to parse location information from heartbeat payload
+                if (payload != null && payload.isNotEmpty()) {
+                    try {
+                        val heartbeat =
+                            jsonSerializer.decodeFromString<DeviceLocationHeartbeat>(
+                                payload.decodeToString(),
+                            )
+                        heartbeat.location?.toLocation()?.let { neighborLocation ->
+                            neighborLocations[neighborDeviceId] = neighborLocation
+                            log.d {
+                                "Received GPS location from neighbor $neighborDeviceId: " +
+                                    "${neighborLocation.latitude}, ${neighborLocation.longitude}"
+                            }
+                        }
+                    } catch (
+                        @Suppress("TooGenericExceptionCaught")
+                        e: RuntimeException,
+                    ) {
+                        log.w { "Failed to parse location from heartbeat: ${e.message}" }
+                    }
+                }
+            }
+
+            topic == deviceTopic(deviceId) -> {
+                // Handle device messages
+                if (payload != null) {
+                    try {
+                        val deserialized = serializer.decodeSerialMessage<Uuid>(payload)
+                        log.d { "Received message from ${deserialized.senderId}" }
+                        deliverableReceived(deserialized)
+                    } catch (exception: SerializationException) {
+                        log.e { "Failed to deserialize message from $topic: ${exception.message}" }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Initialize the MQTT client and connect to the broker.
      */
     @OptIn(ExperimentalUnsignedTypes::class)
     private fun initializeMqttClient() {
         mqttClient = MQTTClient(
-            MQTTVersion.MQTT5,
+            MQTTVersion.MQTT3_1_1,
             host,
             port,
             webSocket = WEBSOCKET_ENDPOINT,
             tls = null,
         ) { message ->
-            // Handle incoming messages and heartbeat
-            val topic = message.topicName
-            val payload = message.payload?.toByteArray()
-
-            when {
-                topic.startsWith(HEARTBEAT_PREFIX) -> {
-                    // Handle heartbeat with location information
-                    val neighborDeviceId = Uuid.Companion.parse(topic.split("/").last())
-                    addNeighbor(neighborDeviceId)
-
-                    // Try to parse location information from heartbeat payload
-                    if (payload != null && payload.isNotEmpty()) {
-                        try {
-                            val heartbeat =
-                                jsonSerializer.decodeFromString<DeviceLocationHeartbeat>(
-                                    payload.decodeToString(),
-                                )
-                            // Save the neighbor's location - this was missing!
-                            heartbeat.location?.toLocation()?.let { neighborLocation ->
-                                neighborLocations[neighborDeviceId] = neighborLocation
-                                log.d {
-                                    "Received GPS location from neighbor $neighborDeviceId: " +
-                                        "${neighborLocation.latitude}, ${neighborLocation.longitude}"
-                                }
-                            }
-                        } catch (
-                            @Suppress("TooGenericExceptionCaught")
-                            e: RuntimeException,
-                        ) {
-                            log.w { "Failed to parse location from heartbeat: ${e.message}" }
-                        }
-                    }
-                }
-
-                topic == deviceTopic(deviceId) -> {
-                    // Handle device messages
-                    if (payload != null) {
-                        try {
-                            val deserialized = serializer.decodeSerialMessage<Uuid>(payload)
-                            log.d { "Received message from ${deserialized.senderId}" }
-                            deliverableReceived(deserialized)
-                        } catch (exception: SerializationException) {
-                            log.e { "Failed to deserialize message from $topic: ${exception.message}" }
-                        }
-                    }
-                }
-            }
+            handleIncomingMessage(message.topicName, message.payload?.toByteArray())
         }
 
         log.i { "Connected to the broker" }
@@ -133,7 +136,56 @@ class MqttMailbox private constructor(
         // Start background tasks
         internalScope.launch(dispatcher) { sendHeartbeatPulse() }
         internalScope.launch { cleanHeartbeatPulse() }
-        internalScope.launch(dispatcher) { mqttClient?.run() }
+        internalScope.launch(dispatcher) { runMqttClientWithRetry() }
+    }
+
+    /**
+     * Runs the MQTT client loop with automatic retry on connection failures.
+     * On failure, the entire MQTT client is recreated and resubscribed.
+     */
+    @OptIn(ExperimentalUnsignedTypes::class)
+    private suspend fun runMqttClientWithRetry() {
+        while (true) {
+            try {
+                mqttClient?.run()
+                // run() returned normally — client was closed intentionally
+                log.i { "MQTT client run loop exited normally" }
+                break
+            } catch (
+                @Suppress("TooGenericExceptionCaught")
+                e: Exception,
+            ) {
+                log.e {
+                    "MQTT connection error (${e::class.simpleName}): ${e.message}, " +
+                        "reconnecting in $RECONNECT_DELAY..."
+                }
+                delay(RECONNECT_DELAY)
+                try {
+                    // Recreate the MQTT client from scratch
+                    mqttClient = MQTTClient(
+                        MQTTVersion.MQTT3_1_1,
+                        host,
+                        port,
+                        webSocket = WEBSOCKET_ENDPOINT,
+                        tls = null,
+                    ) { message ->
+                        handleIncomingMessage(message.topicName, message.payload?.toByteArray())
+                    }
+                    mqttClient?.subscribe(
+                        listOf(
+                            Subscription(HEARTBEAT_WILD_CARD, SubscriptionOptions(Qos.AT_MOST_ONCE)),
+                            Subscription(deviceTopic(deviceId), SubscriptionOptions(Qos.AT_LEAST_ONCE)),
+                        ),
+                    )
+                    log.i { "Reconnected to the broker" }
+                } catch (
+                    @Suppress("TooGenericExceptionCaught")
+                    reconnectError: Exception,
+                ) {
+                    log.e { "Failed to reconnect: ${reconnectError.message}" }
+                }
+            }
+        }
     }
 
     /**
@@ -156,12 +208,19 @@ class MqttMailbox private constructor(
             throw IllegalStateException("Cannot serialize GPS location data - app cannot function", e)
         }
 
-        mqttClient?.publish(
-            retain = false,
-            qos = Qos.AT_MOST_ONCE,
-            topic = heartbeatTopic(deviceId),
-            payload = payload,
-        )
+        try {
+            mqttClient?.publish(
+                retain = false,
+                qos = Qos.AT_MOST_ONCE,
+                topic = heartbeatTopic(deviceId),
+                payload = payload,
+            )
+        } catch (
+            @Suppress("TooGenericExceptionCaught")
+            e: Exception,
+        ) {
+            log.e { "Failed to send heartbeat: ${e.message}" }
+        }
         delay(1.seconds)
         sendHeartbeatPulse()
     }
@@ -181,7 +240,14 @@ class MqttMailbox private constructor(
     override suspend fun close() {
         log.i { "Disconnecting from the broker..." }
         internalScope.cancel()
-        mqttClient?.disconnect(ReasonCode.DISCONNECT_WITH_WILL_MESSAGE)
+        try {
+            mqttClient?.disconnect(ReasonCode.DISCONNECT_WITH_WILL_MESSAGE)
+        } catch (
+            @Suppress("TooGenericExceptionCaught")
+            e: Exception,
+        ) {
+            log.e { "Error during MQTT disconnect: ${e.message}" }
+        }
         mqttClient = null
         log.i("MqttMailbox") { "Disconnected from the broker" }
     }
@@ -194,12 +260,19 @@ class MqttMailbox private constructor(
         require(message is SerializedMessage<Uuid>)
         log.i("MqttMailbox") { "Sending message to $receiverId from $deviceId" }
         internalScope.launch(dispatcher) {
-            mqttClient?.publish(
-                retain = false,
-                qos = Qos.AT_LEAST_ONCE,
-                topic = deviceTopic(receiverId),
-                payload = serializer.encodeSerialMessage(message).toUByteArray(),
-            )
+            try {
+                mqttClient?.publish(
+                    retain = false,
+                    qos = Qos.AT_LEAST_ONCE,
+                    topic = deviceTopic(receiverId),
+                    payload = serializer.encodeSerialMessage(message).toUByteArray(),
+                )
+            } catch (
+                @Suppress("TooGenericExceptionCaught")
+                e: Exception,
+            ) {
+                log.e { "Failed to send message to $receiverId: ${e.message}" }
+            }
         }
     }
 
@@ -248,6 +321,7 @@ class MqttMailbox private constructor(
         }
 
         private const val APP_NAMESPACE = "Echo"
+        private val RECONNECT_DELAY = 5.seconds
         private const val HEARTBEAT_PREFIX = "$APP_NAMESPACE/heartbeat"
         private const val HEARTBEAT_WILD_CARD = "$HEARTBEAT_PREFIX/+"
         private fun deviceTopic(deviceId: Uuid) = "$APP_NAMESPACE/device/$deviceId"
