@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -163,7 +164,9 @@ class NearbyDevicesViewModel(
 
             // Calculate distances to neighboring devices using GPS coordinates
             val distances = calculateNeighborDistances(neighborMap)
-            val currentLocation = _currentLocationFlow.value!! // GPS is mandatory, should never be null
+            val currentLocation = checkNotNull(_currentLocationFlow.value) {
+                "GPS location is required but not available"
+            } // GPS is mandatory, should never be null
 
             log.i { "Current GPS location: ${currentLocation.latitude}, ${currentLocation.longitude}" }
 
@@ -388,6 +391,8 @@ class NearbyDevicesViewModel(
                     is LocationError.Unknown -> log.e { "Unknown GPS error: ${e.cause?.message}" }
                 }
                 throw e // Re-throw since GPS is mandatory
+            } catch (e: CancellationException) {
+                throw e
             } catch (
                 @Suppress("TooGenericExceptionCaught")
                 e: RuntimeException,
@@ -449,7 +454,9 @@ class NearbyDevicesViewModel(
         val distancesMap = mutableMapOf<Uuid, Double>()
 
         actualNeighbors.forEach { neighborId ->
-            val neighborLocation = mailbox.getNeighborLocation(neighborId)!! // Safe because we filtered
+            val neighborLocation = checkNotNull(mailbox.getNeighborLocation(neighborId)) {
+                "Neighbor $neighborId location should be available after filtering"
+            }
 
             val distance = calculateDistance(
                 currentLocation.latitude,
