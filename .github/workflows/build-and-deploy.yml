@@ -136,3 +136,19 @@ jobs:
 #        #env:
 #        #  PLAY_STORE_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_JSON_KEY }}
 #        run: bundle exec fastlane android deploy
+
+  success:
+    runs-on: ubuntu-latest
+    needs:
+      - build-android
+      - build-ios
+      - release
+      #- deploy-play-store
+    if: >-
+      always() && (
+        contains(join(needs.*.result, ','), 'failure')
+        || !contains(join(needs.*.result, ','), 'cancelled')
+      )
+    steps:
+      - name: Verify that there were no failures
+        run: ${{ !contains(join(needs.*.result, ','), 'failure') }}
