@@ -108,8 +108,8 @@ jobs:
         with:
           node-version: ${{ steps.node-version.outputs.version }}
       - name: Semantic Release
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
         run: |
           npm install
           npx semantic-release
