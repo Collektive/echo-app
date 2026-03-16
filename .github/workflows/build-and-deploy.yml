@@ -60,7 +60,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Run lint through Fastlane
-        run: bundle exec fastlane lint
+        run: bundle exec fastlane android lint
       - name: Decode Keystore
         env:
           ENCODED_STRING: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
