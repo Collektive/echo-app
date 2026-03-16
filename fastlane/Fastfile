@@ -1,5 +1,4 @@
 platform :android do
-
   lane :lint do
     gradle(
       task: "ktlintCheck",
@@ -14,38 +13,27 @@ platform :android do
     )
   end
 
-  # Build signed release APK + AAB
   lane :release do
+    # Builds the APK used for the GitHub Release
     gradle(
-      task: "composeApp:assembleRelease composeApp:bundleRelease",
+      task: "composeApp:assembleRelease",
+      project_dir: "./"
+    )
+    # Builds the Android App Bundle (AAB) used for the Play Store
+    gradle(
+      task: "composeApp:bundleRelease",
       project_dir: "./"
     )
   end
 
-  # ──────────────────────────────────────────────────────────────
-  # Deploy AAB to Google Play Store (internal track)
-  # ──────────────────────────────────────────────────────────────
-  # todo:
-  # 1. Create service account Google Play, download json key
-  # 2. set path to JSON key in ENV variable SUPPLY_JSON_KEY, e.g.:
-  #    export SUPPLY_JSON_KEY="/path/to/your/service-account.json"
-  # or pass is as parameter
-  # 3. Exec: bundle exec fastlane android deploy
-  # ──────────────────────────────────────────────────────────────
   lane :deploy do
-    release  # build APK + AAB
-
+    # Uploads the generated AAB to Google Play Console
     upload_to_play_store(
-      package_name: "it.unibo.collektive.echo",
-      aab: "composeApp/build/outputs/bundle/release/composeApp-release.aab",
-      track: "internal",           # Options: internal, alpha, beta, production
-      release_status: "draft",     # Options: completed, draft, halted, inProgress
-      skip_upload_metadata: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true
+      track: 'production', # ['internal', 'production', 'beta']
+      aab: 'composeApp/build/outputs/bundle/release/composeApp-release.aab',
+      json_key_data: ENV['PLAY_STORE_JSON_KEY_DATA']
     )
   end
-
 end
 
 platform :ios do
