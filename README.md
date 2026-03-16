@@ -2,10 +2,10 @@
 
 A decentralized, location-aware messaging application built with Kotlin Multiplatform using Aggregate Computing principles. Featuring GPS-based gossip algorithms for proximity communication.
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-blue.svg)](https://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.8.2-yellow.svg)](https://www.jetbrains.com/lp/compose-multiplatform/)
-[![Collektive](https://img.shields.io/badge/Collektive-26.1.2-purple.svg)](https://github.com/Collektive/collektive)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Kotlin](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCollektive%2Fecho-app%2Fmain%2Fgradle%2Flibs.versions.toml&query=%24.versions.kotlin&label=Kotlin&color=blue)](https://kotlinlang.org)
+[![Collektive](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCollektive%2Fecho-app%2Fmain%2Fgradle%2Flibs.versions.toml&query=%24.versions.collektive&label=Collektive&color=purple)](https://github.com/Collektive/collektive)
+[![Compose Multiplatform](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCollektive%2Fecho-app%2Fmain%2Fgradle%2Flibs.versions.toml&query=%24.versions.composeMultiplatform&label=Compose%20Multiplatform&color=yellow)](https://www.jetbrains.com/lp/compose-multiplatform/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 
 ## 🌟 Features
 
