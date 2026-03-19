@@ -6,12 +6,8 @@ import it.unibo.collektive.aggregate.Field
 import it.unibo.collektive.aggregate.api.neighboring
 import it.unibo.collektive.aggregate.ids
 import it.unibo.collektive.aggregate.toMap
-import it.unibo.collektive.echo.DEFAULT_MAX_DISTANCE
-import it.unibo.collektive.echo.DEFAULT_MAX_TIME
 import it.unibo.collektive.echo.MQTT_HOST
 import it.unibo.collektive.echo.gossip.chatMultipleSources
-import it.unibo.collektive.echo.location.Location
-import it.unibo.collektive.echo.location.LocationError
 import it.unibo.collektive.echo.location.LocationService
 import it.unibo.collektive.echo.models.ChatMessage
 import it.unibo.collektive.echo.network.mqtt.MqttMailbox
@@ -19,20 +15,13 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.PI
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.sin
-import kotlin.math.sqrt
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -43,88 +32,61 @@ import kotlin.uuid.Uuid
  * ViewModel for managing nearby devices, location tracking [locationService], and message sending.
  *
  */
+@OptIn(ExperimentalUuidApi::class)
 class NearbyDevicesViewModel(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val locationService: LocationService,
 ) {
     /** Logger instance for ViewModel diagnostics. */
-    val log = logging("VIEWMODEL")
+    private val log = logging("VIEWMODEL")
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-
-    @OptIn(ExperimentalUuidApi::class)
-    private val _dataFlow = MutableStateFlow<Set<Uuid>>(emptySet())
-
-    /** Flow of discovered device UUIDs. */
-    @OptIn(ExperimentalUuidApi::class)
-    val dataFlow: StateFlow<Set<Uuid>> = _dataFlow.asStateFlow()
-
-    private val _connectionFlow = MutableStateFlow(ConnectionState.DISCONNECTED)
-
-    /** Flow of the current MQTT connection state. */
-    val connectionFlow: StateFlow<ConnectionState> = _connectionFlow.asStateFlow()
-
-    private val _messagesFlow = MutableStateFlow<List<ChatMessage>>(emptyList())
-
-    /** Flow of received and sent chat messages. */
-    val messagesFlow: StateFlow<List<ChatMessage>> = _messagesFlow.asStateFlow()
-
-    private val _isSendingFlow = MutableStateFlow(false)
-
-    /** Flow indicating whether a message is currently being broadcast. */
-    val isSendingFlow: StateFlow<Boolean> = _isSendingFlow.asStateFlow()
-
-    private val _sendingCounterFlow = MutableStateFlow(0)
-
-    /** Flow of the remaining seconds while a message is being sent. */
-    val sendingCounterFlow: StateFlow<Int> = _sendingCounterFlow.asStateFlow()
-
-    private val _currentLocationFlow = MutableStateFlow<Location?>(null)
-
-    /** Flow of the device's most recent GPS [Location], or `null` if unknown. */
-    val currentLocationFlow: StateFlow<Location?> = _currentLocationFlow.asStateFlow()
-
-    private val _locationErrorFlow = MutableStateFlow<LocationError?>(null)
-
-    /** Flow of the latest [LocationError], or `null` when no error is present. */
-    val locationErrorFlow: StateFlow<LocationError?> = _locationErrorFlow.asStateFlow()
 
     /** Randomly-generated unique identifier for this device instance. */
     @OptIn(ExperimentalUuidApi::class)
     val deviceId = Uuid.random()
-    private var currentMessage: String = ""
+    private val _uiState = MutableStateFlow(NearbyDevicesUiState(deviceId = deviceId))
 
-    @OptIn(ExperimentalUuidApi::class)
-    private var currentMessageId: Uuid = Uuid.random()
-    private var messageStartTime: Long = 0L
-    private var messageLifeTime: Double = DEFAULT_MAX_TIME
-    private var maxDistance: Double = DEFAULT_MAX_DISTANCE
+    /** Aggregate state consumed by the nearby-devices UI. */
+    val uiState: StateFlow<NearbyDevicesUiState> = _uiState.asStateFlow()
 
-    /** Represents the MQTT broker connection state. */
-    enum class ConnectionState {
-        /** Successfully connected to the broker. */
-        CONNECTED,
+    private val messageTransmission = MessageTransmissionController(
+        scope = scope,
+        onStateChanged = { isSending, sendingCounter, parameters ->
+            updateUiState {
+                copy(
+                    isSending = isSending,
+                    sendingCounter = sendingCounter,
+                    messageParameters = parameters,
+                )
+            }
+        },
+        onConnectionStateChanged = { connectionState ->
+            updateUiState { copy(connection = connectionState) }
+        },
+    )
 
-        /** Not connected to the broker. */
-        DISCONNECTED,
-
-        /** Actively broadcasting a message. */
-        SENDING,
-    }
-
-    /** Constants used by the nearby-devices view model. */
-    companion object {
-        /** Interval in milliseconds between GPS availability checks. */
-        private const val GPS_POLL_INTERVAL_MS = 500L
-
-        /** Mean Earth radius in metres, used by the Haversine formula. */
-        private const val EARTH_RADIUS_METERS = 6371000.0
-
-        /** Degrees-per-half-circle, used to convert degrees to radians. */
-        private const val DEGREES_HALF_CIRCLE = 180.0
-    }
+    private val locationTracker = LocationTracker(
+        scope = scope,
+        locationService = locationService,
+        onLocationChanged = { location ->
+            updateUiState {
+                copy(
+                    currentLocation = location,
+                    locationError = null,
+                )
+            }
+        },
+        onLocationError = { error ->
+            updateUiState { copy(locationError = error) }
+        },
+        onMailboxLocationUpdate = { location ->
+            mqttMailbox?.updateCurrentLocation(location)
+        },
+    )
 
     private var mqttMailbox: MqttMailbox? = null
+    private var collektiveJob: Job? = null
 
     /**
      * Collektive program using MQTT mailbox and GPS location for proximity-based messaging.
@@ -132,7 +94,7 @@ class NearbyDevicesViewModel(
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
     private suspend fun collektiveProgram(): Collektive<Uuid, Pair<Set<Uuid>, List<ChatMessage>>> {
         // Wait for GPS location to be available before creating MQTT mailbox
-        val initialLocation = checkNotNull(_currentLocationFlow.value) {
+        val initialLocation = checkNotNull(uiState.value.currentLocation) {
             "GPS location is required but not available for MQTT initialization"
         }
 
@@ -151,22 +113,24 @@ class NearbyDevicesViewModel(
 
             // Get current time
             val currentTime = Clock.System.now().epochSeconds.toDouble()
+            val activeSession = messageTransmission.activeSession(currentTime)
+            val messageParameters = activeSession?.parameters ?: messageTransmission.parameters
 
             // Determine if this device is a source (has a message to send)
-            val isSource = currentMessage.isNotEmpty() &&
-                (currentTime - messageStartTime) <= messageLifeTime
+            val isSource = activeSession != null
 
             log.i { isSource }
 
-            if (isSource) {
+            activeSession?.let { outgoingMessage ->
                 log.i {
-                    "Device is source: sending message '$currentMessage' (${currentTime - messageStartTime}s elapsed)"
+                    "Device is source: sending message '${outgoingMessage.text}' " +
+                        "(${currentTime - outgoingMessage.startedAtEpochSeconds}s elapsed)"
                 }
             }
 
             // Calculate distances to neighboring devices using GPS coordinates
             val distances = calculateNeighborDistances(neighborMap)
-            val currentLocation = checkNotNull(_currentLocationFlow.value) {
+            val currentLocation = checkNotNull(uiState.value.currentLocation) {
                 "GPS location is required but not available"
             } // GPS is mandatory, should never be null
 
@@ -178,11 +142,11 @@ class NearbyDevicesViewModel(
             val allSourceMessages = chatMultipleSources(
                 distances = distances,
                 isSource = isSource,
-                currentTime = currentTime - messageStartTime,
-                content = currentMessage,
-                messageId = currentMessageId,
-                lifeTime = messageLifeTime,
-                maxDistance = maxDistance,
+                currentTime = activeSession?.let { currentTime - it.startedAtEpochSeconds } ?: 0.0,
+                content = activeSession?.text.orEmpty(),
+                messageId = activeSession?.messageId ?: deviceId,
+                lifeTime = messageParameters.lifeTimeSeconds,
+                maxDistance = messageParameters.maxDistanceMeters,
             )
 
             // Convert messages to ChatMessage objects
@@ -214,51 +178,27 @@ class NearbyDevicesViewModel(
      */
     @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
     fun startCollektiveProgram() {
-        scope.launch {
+        if (collektiveJob?.isActive == true) {
+            return
+        }
+
+        collektiveJob = scope.launch {
             log.i { "Starting Collektive program..." }
 
             // Wait for GPS location to be available - GPS is mandatory
-            while (_currentLocationFlow.value == null) {
+            while (uiState.value.currentLocation == null) {
                 log.i { "Waiting for GPS location before starting Collektive program..." }
-                delay(GPS_POLL_INTERVAL_MS) // Check periodically
+                delay(GpsPollIntervalMs)
             }
 
-            _connectionFlow.value = ConnectionState.CONNECTED
+            updateUiState { copy(connection = ConnectionState.CONNECTED) }
             val program = collektiveProgram()
-            log.i { "Collektive program started with GPS location: ${_currentLocationFlow.value}" }
-            while (isActive) {
+            log.i { "Collektive program started with GPS location: ${uiState.value.currentLocation}" }
+
+            while (true) {
                 val (newDevices, newMessages) = program.cycle()
-                _dataFlow.value = newDevices
-
-                // Update messages, only add new unique messages based on messageId
-                val currentMessages = _messagesFlow.value.toMutableList()
-                newMessages.forEach { newMessage ->
-                    // Check if we already have this message (same messageId)
-                    val isDuplicate = currentMessages.any { existing ->
-                        existing.messageId == newMessage.messageId
-                    }
-
-                    if (!isDuplicate) {
-                        log.i {
-                            "Adding NEW message to UI: '${newMessage.text}' " +
-                                "from ${newMessage.sender} (ID: ${newMessage.messageId})"
-                        }
-                        currentMessages.add(newMessage)
-                    } else {
-                        log.i {
-                            "Skipping duplicate message: '${newMessage.text}' " +
-                                "from ${newMessage.sender} (ID: ${newMessage.messageId})"
-                        }
-                    }
-                }
-                _messagesFlow.value = currentMessages
-
-                // Check if current message has expired
-                val currentTime = Clock.System.now().epochSeconds.toDouble()
-                if (currentMessage.isNotEmpty() && (currentTime - messageStartTime) > messageLifeTime) {
-                    stopSendingMessage()
-                }
-
+                updateUiState { copy(discoveredDevices = newDevices) }
+                appendUniqueMessages(newMessages)
                 delay(1.seconds)
             }
         }
@@ -271,153 +211,30 @@ class NearbyDevicesViewModel(
     @OptIn(ExperimentalTime::class, ExperimentalUuidApi::class)
     fun sendMessage(
         message: String,
-        lifeTime: Double = DEFAULT_MAX_TIME,
-        maxDistanceMeters: Double = DEFAULT_MAX_DISTANCE,
+        lifeTime: Double = messageTransmission.parameters.lifeTimeSeconds,
+        maxDistanceMeters: Double = messageTransmission.parameters.maxDistanceMeters,
     ) {
-        scope.launch {
-            log.i { "Message: '$message'" }
-            _isSendingFlow.value = true
-            _connectionFlow.value = ConnectionState.SENDING
-            _sendingCounterFlow.value = 0
-
-            currentMessage = message
-            currentMessageId = Uuid.random()
-            messageStartTime = Clock.System.now().epochSeconds
-            messageLifeTime = lifeTime
-            maxDistance = maxDistanceMeters
-
-            // Add the message to local messages immediately
-            val localMessage = ChatMessage(
-                text = message,
-                sender = deviceId,
-                messageId = currentMessageId,
-                distanceFromSource = 0.0,
-            )
-            val currentMessages = _messagesFlow.value.toMutableList()
-            currentMessages.add(localMessage)
-            _messagesFlow.value = currentMessages
-
-            // Start counter for sending duration
-            startSendingCounter(lifeTime.toInt())
-        }
-    }
-
-    /**
-     * Start a countdown timer [durationSeconds] for the sending duration, updating every second.
-     */
-    private fun startSendingCounter(durationSeconds: Int) {
-        scope.launch {
-            // Start with the full duration and count down
-            _sendingCounterFlow.value = durationSeconds
-
-            for (i in durationSeconds - 1 downTo 0) {
-                delay(1000) // Wait 1 second
-                if (_isSendingFlow.value) { // Only continue if still sending
-                    _sendingCounterFlow.value = i
-                } else {
-                    break // Stop if sending was cancelled
-                }
-            }
-        }
-    }
-
-    /**
-     * Stop sending the current message when its lifetime expires.
-     */
-    @OptIn(ExperimentalTime::class)
-    private fun stopSendingMessage() {
-        log.i { "Message lifetime expired, stopping transmission" }
-        currentMessage = ""
-        messageStartTime = 0L
-        _isSendingFlow.value = false
-        _connectionFlow.value = ConnectionState.CONNECTED
-        _sendingCounterFlow.value = 0
+        val localMessage = messageTransmission.sendMessage(
+            message = message,
+            deviceId = deviceId,
+            lifeTime = lifeTime,
+            maxDistanceMeters = maxDistanceMeters,
+        )
+        appendUniqueMessages(listOf(localMessage))
     }
 
     /**
      * Update message parameters for future messages with new [lifeTimeSeconds] and [maxDistanceMeters].
      */
     fun updateMessageParameters(lifeTimeSeconds: Double, maxDistanceMeters: Double) {
-        messageLifeTime = lifeTimeSeconds
-        maxDistance = maxDistanceMeters
+        messageTransmission.updateParameters(lifeTimeSeconds, maxDistanceMeters)
     }
 
     /**
      * Start GPS location tracking, updating location flow and MQTT mailbox.
      */
     fun startLocationTracking() {
-        scope.launch {
-            log.i { "Starting location tracking..." }
-            // Give some time for permissions to be processed
-            delay(1000)
-
-            try {
-                // Get initial location
-                val initialLocation = locationService.getCurrentLocation()
-                    ?: throw LocationError.ServiceUnavailable
-
-                _currentLocationFlow.value = initialLocation
-                _locationErrorFlow.value = null
-
-                // Update MQTT mailbox with initial location
-                mqttMailbox?.updateCurrentLocation(initialLocation)
-
-                log.i {
-                    "Initial location: ${initialLocation.latitude}, " +
-                        "${initialLocation.longitude} (accuracy: ${initialLocation.accuracy}m)"
-                }
-
-                // Start continuous location updates
-                locationService.startLocationUpdates { location ->
-                    _currentLocationFlow.value = location
-                    // Update MQTT mailbox with new location for sharing with neighbors
-                    mqttMailbox?.updateCurrentLocation(location)
-                    log.i {
-                        "Location update: ${location.latitude}, ${location.longitude} (accuracy: ${location.accuracy}m)"
-                    }
-                }
-            } catch (e: LocationError) {
-                _locationErrorFlow.value = e
-                log.e { "Location error - GPS is mandatory for this app: ${e::class.simpleName}" }
-                when (e) {
-                    is LocationError.PermissionDenied -> log.e {
-                        "GPS permission denied - app cannot function without location access"
-                    }
-
-                    is LocationError.LocationDisabled -> log.e {
-                        "GPS services disabled - app requires GPS to be enabled"
-                    }
-
-                    is LocationError.ServiceUnavailable -> log.e { "GPS service unavailable - app cannot function" }
-
-                    is LocationError.Unknown -> log.e { "Unknown GPS error: ${e.cause?.message}" }
-                }
-                // Don't re-throw: the error is exposed via locationErrorFlow for the UI.
-                // Re-throwing would crash the app, especially on iOS simulator without GPS.
-            } catch (e: CancellationException) {
-                throw e
-            } catch (
-                @Suppress("TooGenericExceptionCaught")
-                e: RuntimeException,
-            ) {
-                _locationErrorFlow.value = LocationError.Unknown(e)
-                log.e { "Unexpected GPS error: ${e.message}" }
-                // Don't re-throw: same reason as above.
-            }
-        }
-    }
-
-    /**
-     * Calculate distance between two locations using Haversine formula.
-     */
-    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val dLat = (lat2 - lat1) * PI / DEGREES_HALF_CIRCLE
-        val dLon = (lon2 - lon1) * PI / DEGREES_HALF_CIRCLE
-        val a = sin(dLat / 2).pow(2) +
-            cos(lat1 * PI / DEGREES_HALF_CIRCLE) * cos(lat2 * PI / DEGREES_HALF_CIRCLE) * sin(dLon / 2).pow(2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-        return EARTH_RADIUS_METERS * c
+        locationTracker.start()
     }
 
     /**
@@ -426,49 +243,23 @@ class NearbyDevicesViewModel(
      */
     @OptIn(ExperimentalUuidApi::class)
     private fun calculateNeighborDistances(neighborMap: Field<Uuid, *>): Field<Uuid, Double> {
-        val currentLocation = checkNotNull(_currentLocationFlow.value) {
+        val currentLocation = checkNotNull(uiState.value.currentLocation) {
             "GPS location is required but not available"
         }
         val mailbox = checkNotNull(mqttMailbox) {
             "MQTT mailbox is required but not available"
         }
-        // Filter out this device itself and neighbors without GPS data
-        val actualNeighbors = neighborMap.neighbors.ids.list.filter { id ->
-            // Skip if this is the same device
-            if (id == deviceId) {
-                log.d { "Excluding self ($id) from neighbor calculations" }
-                return@filter false
-            }
-
-            // Skip if no GPS data available yet
-            val hasLocation = mailbox.getNeighborLocation(id) != null
-            if (!hasLocation) {
-                log.d { "Neighbor $id GPS data not available yet - excluding from distance calculation" }
-            }
-            hasLocation
-        }
+        val distancesMap = NeighborDistanceCalculator.calculateDistances(
+            currentLocation = currentLocation,
+            selfId = deviceId,
+            neighborIds = neighborMap.neighbors.ids.list,
+            neighborLocationProvider = mailbox::getNeighborLocation,
+            onDiagnostic = { diagnostic -> log.d { diagnostic } },
+        )
 
         log.i {
-            "Processing ${actualNeighbors.size} actual neighbors with GPS data" +
+            "Processing ${distancesMap.size} actual neighbors with GPS data" +
                 " out of ${neighborMap.neighbors.size} total discovered devices"
-        }
-
-        // Create a map of distances for valid neighbors only
-        val distancesMap = mutableMapOf<Uuid, Double>()
-
-        actualNeighbors.forEach { neighborId ->
-            val neighborLocation = checkNotNull(mailbox.getNeighborLocation(neighborId)) {
-                "Neighbor $neighborId location should be available after filtering"
-            }
-
-            val distance = calculateDistance(
-                currentLocation.latitude,
-                currentLocation.longitude,
-                neighborLocation.latitude,
-                neighborLocation.longitude,
-            )
-            log.d { "Distance to neighbor $neighborId: ${distance}m" }
-            distancesMap[neighborId] = distance
         }
 
         // Map all neighbors to their distances, using a very large distance for invalid neighbors
@@ -482,6 +273,14 @@ class NearbyDevicesViewModel(
      * Cleanup resources when ViewModel is no longer needed.
      */
     fun cleanup() {
+        collektiveJob?.cancel()
+        collektiveJob = null
+        messageTransmission.cleanup()
+        val mailbox = mqttMailbox
+        mqttMailbox = null
+        scope.launch {
+            mailbox?.close()
+        }
         stopLocationTracking()
     }
 
@@ -489,7 +288,42 @@ class NearbyDevicesViewModel(
      * Stop GPS location tracking.
      */
     fun stopLocationTracking() {
-        locationService.stopLocationUpdates()
-        log.i { "GPS tracking stopped" }
+        locationTracker.stop()
+    }
+
+    private fun appendUniqueMessages(newMessages: List<ChatMessage>) {
+        if (newMessages.isEmpty()) {
+            return
+        }
+
+        val currentMessages = uiState.value.messages
+        val knownMessageIds = currentMessages.map { it.messageId }.toMutableSet()
+        val uniqueMessages = newMessages.filter { message ->
+            val isNewMessage = knownMessageIds.add(message.messageId)
+            if (isNewMessage) {
+                log.i {
+                    "Adding NEW message to UI: '${message.text}' " +
+                        "from ${message.sender} (ID: ${message.messageId})"
+                }
+            } else {
+                log.i {
+                    "Skipping duplicate message: '${message.text}' " +
+                        "from ${message.sender} (ID: ${message.messageId})"
+                }
+            }
+            isNewMessage
+        }
+
+        if (uniqueMessages.isNotEmpty()) {
+            updateUiState { copy(messages = messages + uniqueMessages) }
+        }
+    }
+
+    private fun updateUiState(transform: NearbyDevicesUiState.() -> NearbyDevicesUiState) {
+        _uiState.value = _uiState.value.transform()
+    }
+
+    private companion object {
+        const val GpsPollIntervalMs = 500L
     }
 }
