@@ -12,8 +12,8 @@ import kotlin.uuid.Uuid
 
 /** Utility for converting neighbor GPS coordinates into Haversine distances. */
 object NeighborDistanceCalculator {
-    private const val EarthRadiusMeters = 6371000.0
-    private const val DegreesHalfCircle = 180.0
+    private const val EARTH_RADIUS_METERS = 6371000.0
+    private const val DEGREES_HALF_CIRCLE = 180.0
 
     fun calculateDistance(
         fromLatitude: Double,
@@ -21,15 +21,15 @@ object NeighborDistanceCalculator {
         toLatitude: Double,
         toLongitude: Double,
     ): Double {
-        val deltaLatitude = (toLatitude - fromLatitude) * PI / DegreesHalfCircle
-        val deltaLongitude = (toLongitude - fromLongitude) * PI / DegreesHalfCircle
+        val deltaLatitude = (toLatitude - fromLatitude) * PI / DEGREES_HALF_CIRCLE
+        val deltaLongitude = (toLongitude - fromLongitude) * PI / DEGREES_HALF_CIRCLE
         val a = sin(deltaLatitude / 2).pow(2) +
-            cos(fromLatitude * PI / DegreesHalfCircle) *
-            cos(toLatitude * PI / DegreesHalfCircle) *
+            cos(fromLatitude * PI / DEGREES_HALF_CIRCLE) *
+            cos(toLatitude * PI / DEGREES_HALF_CIRCLE) *
             sin(deltaLongitude / 2).pow(2)
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
-        return EarthRadiusMeters * c
+        return EARTH_RADIUS_METERS * c
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -45,10 +45,13 @@ object NeighborDistanceCalculator {
         neighborIds.forEach { neighborId ->
             when {
                 neighborId == selfId -> onDiagnostic("Excluding self ($neighborId) from neighbor calculations")
+
                 else -> {
                     val neighborLocation = neighborLocationProvider(neighborId)
                     if (neighborLocation == null) {
-                        onDiagnostic("Neighbor $neighborId GPS data not available yet - excluding from distance calculation")
+                        onDiagnostic(
+                            "Neighbor $neighborId GPS data not available yet - excluding from distance calculation",
+                        )
                     } else {
                         distances[neighborId] = calculateDistance(
                             fromLatitude = currentLocation.latitude,

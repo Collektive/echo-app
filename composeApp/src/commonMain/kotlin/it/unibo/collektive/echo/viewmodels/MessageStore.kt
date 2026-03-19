@@ -4,10 +4,7 @@ import it.unibo.collektive.echo.models.ChatMessage
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-data class MessageStoreResult(
-    val allMessages: List<ChatMessage>,
-    val appendedMessages: List<ChatMessage>,
-)
+data class MessageStoreResult(val allMessages: List<ChatMessage>, val appendedMessages: List<ChatMessage>)
 
 /** Maintains a deduplicated chat timeline keyed by message id. */
 @OptIn(ExperimentalUuidApi::class)

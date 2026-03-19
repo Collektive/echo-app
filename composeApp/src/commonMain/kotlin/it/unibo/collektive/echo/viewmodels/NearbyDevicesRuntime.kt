@@ -7,7 +7,7 @@ import it.unibo.collektive.aggregate.api.neighboring
 import it.unibo.collektive.aggregate.ids
 import it.unibo.collektive.aggregate.toMap
 import it.unibo.collektive.echo.MQTT_HOST
-import it.unibo.collektive.echo.gossip.Message as GossipMessage
+import it.unibo.collektive.echo.gossip.Message
 import it.unibo.collektive.echo.gossip.chatMultipleSources
 import it.unibo.collektive.echo.location.Location
 import it.unibo.collektive.echo.models.ChatMessage
@@ -52,7 +52,7 @@ class NearbyDevicesRuntime(
 
             while (currentLocationProvider() == null) {
                 log.i { "Waiting for GPS location before starting Collektive program..." }
-                delay(GpsPollIntervalMs)
+                delay(GPS_POLL_INTERVAL_MS)
             }
 
             onConnectionStateChanged(ConnectionState.CONNECTED)
@@ -160,27 +160,26 @@ class NearbyDevicesRuntime(
         }
     }
 
-    private fun Map<Uuid, GossipMessage>.toChatMessages(): List<ChatMessage> =
-        mapNotNull { (senderId, message) ->
-            if (message.content.isEmpty()) {
-                null
-            } else {
-                log.i {
-                    "Received gossip message from $senderId: " +
-                        "'${message.content}' at distance ${message.distanceFromSource}"
-                }
-                ChatMessage(
-                    text = message.content,
-                    sender = senderId,
-                    messageId = message.messageId,
-                    distanceFromSource = message.distanceFromSource,
-                )
+    private fun Map<Uuid, Message>.toChatMessages(): List<ChatMessage> = mapNotNull { (senderId, message) ->
+        if (message.content.isEmpty()) {
+            null
+        } else {
+            log.i {
+                "Received gossip message from $senderId: " +
+                    "'${message.content}' at distance ${message.distanceFromSource}"
             }
-        }.also { chatMessages ->
-            log.i { "Final messages: ${chatMessages.size} total, senders: ${chatMessages.map { it.sender }}" }
+            ChatMessage(
+                text = message.content,
+                sender = senderId,
+                messageId = message.messageId,
+                distanceFromSource = message.distanceFromSource,
+            )
         }
+    }.also { chatMessages ->
+        log.i { "Final messages: ${chatMessages.size} total, senders: ${chatMessages.map { it.sender }}" }
+    }
 
     private companion object {
-        const val GpsPollIntervalMs = 500L
+        const val GPS_POLL_INTERVAL_MS = 500L
     }
 }

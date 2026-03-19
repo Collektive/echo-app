@@ -57,7 +57,9 @@ class MessageTransmissionController(
     }
 
     @OptIn(ExperimentalTime::class)
-    fun activeSession(currentEpochSeconds: Double = Clock.System.now().epochSeconds.toDouble()): OutgoingMessageSession? {
+    fun activeSession(
+        currentEpochSeconds: Double = Clock.System.now().epochSeconds.toDouble(),
+    ): OutgoingMessageSession? {
         val activeSession = currentSession ?: return null
         return if (activeSession.isActive(currentEpochSeconds)) {
             activeSession

@@ -26,17 +26,12 @@ import it.unibo.collektive.echo.models.ChatMessage
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-private const val TimestampDisplayLength = 16
+private const val TIMESTAMP_DISPLAY_LENGTH = 16
 
 /** Scrollable list of chat messages. */
 @OptIn(ExperimentalUuidApi::class)
 @Composable
-fun MessageList(
-    messages: List<ChatMessage>,
-    deviceId: Uuid,
-    listState: LazyListState,
-    modifier: Modifier = Modifier,
-) {
+fun MessageList(messages: List<ChatMessage>, deviceId: Uuid, listState: LazyListState, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -112,7 +107,7 @@ fun MessageItem(message: ChatMessage, deviceId: Uuid) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = message.timestamp.toString().take(TimestampDisplayLength),
+                        text = message.timestamp.toString().take(TIMESTAMP_DISPLAY_LENGTH),
                         color = if (isOwnMessage) {
                             MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                         } else {

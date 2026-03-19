@@ -28,7 +28,7 @@ class LocationTracker(
 
         trackingJob = scope.launch {
             log.i { "Starting location tracking..." }
-            delay(LocationStartupDelayMs)
+            delay(LOCATION_STARTUP_DELAY_MS)
 
             try {
                 val initialLocation = locationService.getCurrentLocation()
@@ -87,6 +87,6 @@ class LocationTracker(
     }
 
     private companion object {
-        const val LocationStartupDelayMs = 1000L
+        const val LOCATION_STARTUP_DELAY_MS = 1000L
     }
 }

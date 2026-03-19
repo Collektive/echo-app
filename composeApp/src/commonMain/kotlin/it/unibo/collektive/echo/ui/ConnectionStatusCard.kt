@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import it.unibo.collektive.echo.location.Location
 import it.unibo.collektive.echo.viewmodels.ConnectionState
 
-private val ConnectedColor = Color(0xFF4CAF50)
-private val SendingColor = Color(0xFFFF9800)
-private val DisconnectedColor = Color(0xFFF44336)
-private const val BackgroundAlpha = 0.1f
+private val CONNECTED_COLOR = Color(0xFF4CAF50)
+private val SENDING_COLOR = Color(0xFFFF9800)
+private val DISCONNECTED_COLOR = Color(0xFFF44336)
+private const val BACKGROUND_ALPHA = 0.1f
 
 /** Card displaying the current MQTT connection state, device count, and GPS coordinates. */
 @Composable
@@ -42,7 +42,7 @@ fun ConnectionStatusCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = stateColor.copy(alpha = BackgroundAlpha),
+            containerColor = stateColor.copy(alpha = BACKGROUND_ALPHA),
         ),
     ) {
         Row(
@@ -76,7 +76,7 @@ fun ConnectionStatusCard(
                     Text(
                         text = "GPS: ${location.latitude}, ${location.longitude}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = ConnectedColor,
+                        color = CONNECTED_COLOR,
                         maxLines = 1,
                     )
                 }
@@ -89,7 +89,7 @@ fun ConnectionStatusCard(
                     text = "${sendingCounter}s",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Medium,
-                    color = SendingColor,
+                    color = SENDING_COLOR,
                 )
             }
         }
@@ -97,9 +97,9 @@ fun ConnectionStatusCard(
 }
 
 private fun ConnectionState.color(): Color = when (this) {
-    ConnectionState.CONNECTED -> ConnectedColor
-    ConnectionState.SENDING -> SendingColor
-    ConnectionState.DISCONNECTED -> DisconnectedColor
+    ConnectionState.CONNECTED -> CONNECTED_COLOR
+    ConnectionState.SENDING -> SENDING_COLOR
+    ConnectionState.DISCONNECTED -> DISCONNECTED_COLOR
 }
 
 private fun ConnectionState.label(): String = when (this) {

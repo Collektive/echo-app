@@ -34,22 +34,20 @@ class NearbyDevicesStateStore(deviceId: Uuid) {
         _uiState.value = reduce(_uiState.value, action)
     }
 
-    private fun reduce(
-        currentState: NearbyDevicesUiState,
-        action: NearbyDevicesAction,
-    ): NearbyDevicesUiState = when (action) {
-        is NearbyDevicesAction.ConnectionChanged -> currentState.copy(connection = action.connection)
-        is NearbyDevicesAction.DevicesDiscovered -> currentState.copy(discoveredDevices = action.devices)
-        is NearbyDevicesAction.LocationUpdated -> currentState.copy(
-            currentLocation = action.location,
-            locationError = null,
-        )
-        is NearbyDevicesAction.LocationFailed -> currentState.copy(locationError = action.error)
-        is NearbyDevicesAction.MessagesChanged -> currentState.copy(messages = action.messages)
-        is NearbyDevicesAction.MessageTransmissionChanged -> currentState.copy(
-            isSending = action.isSending,
-            sendingCounter = action.sendingCounter,
-            messageParameters = action.parameters,
-        )
-    }
+    private fun reduce(currentState: NearbyDevicesUiState, action: NearbyDevicesAction): NearbyDevicesUiState =
+        when (action) {
+            is NearbyDevicesAction.ConnectionChanged -> currentState.copy(connection = action.connection)
+            is NearbyDevicesAction.DevicesDiscovered -> currentState.copy(discoveredDevices = action.devices)
+            is NearbyDevicesAction.LocationUpdated -> currentState.copy(
+                currentLocation = action.location,
+                locationError = null,
+            )
+            is NearbyDevicesAction.LocationFailed -> currentState.copy(locationError = action.error)
+            is NearbyDevicesAction.MessagesChanged -> currentState.copy(messages = action.messages)
+            is NearbyDevicesAction.MessageTransmissionChanged -> currentState.copy(
+                isSending = action.isSending,
+                sendingCounter = action.sendingCounter,
+                messageParameters = action.parameters,
+            )
+        }
 }
