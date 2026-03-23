@@ -1,3 +1,3 @@
 source "https://rubygems.org"
-ruby '4.0.2'
+ruby file: '.ruby-version'
 gem "fastlane"

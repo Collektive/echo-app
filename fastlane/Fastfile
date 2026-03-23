@@ -12,8 +12,14 @@ platform :android do
       project_dir: "./"
     )
   end
-  
+
   lane :release do
+    # Builds the APK used for the GitHub Release
+    gradle(
+      task: "composeApp:assembleRelease",
+      project_dir: "./"
+    )
+    # Builds the Android App Bundle (AAB) used for the Play Store
     gradle(
       task: "composeApp:bundleRelease",
       project_dir: "./"
@@ -21,47 +27,37 @@ platform :android do
   end
 
   lane :deploy do
+    # Uploads the generated AAB to Google Play Console
+    upload_to_play_store(
+      track: 'production', # ['internal', 'production', 'beta']
+      aab: 'composeApp/build/outputs/bundle/release/composeApp-release.aab',
+      json_key_data: ENV['PLAY_STORE_JSON_KEY_DATA']
+    )
   end
-
 end
 
 platform :ios do
+
   lane :build do
     gradle(
       task: "composeApp:linkDebugFrameworkIosArm64",
       project_dir: "./"
     )
-    
   end
 
-    lane :ios_release do
-      gradle(
-        task: "composeApp:linkReleaseFrameworkIosArm64",
-        project_dir: "./"
-      )
-      build_app(
-        project: './iosApp/iosApp.xcodeproj',
-        scheme: "iosApp",
-        configuration: "Release",
-        destination: "generic/platform=iOS"
-      )
-
-    end
-
-    lane :release do
-        gradle(
-          task: "composeApp:linkReleaseFrameworkIosArm64",
-          project_dir: "./"
-        )
-
-        build_app(
-          project: './iosApp/iosApp.xcodeproj',
-          scheme: 'iosApp',
-          configuration: 'Release',
-          destination: 'generic/platform=iOS',
-          allowProvisioningUpdates: true
-        )
-    end
+  lane :release do
+    gradle(
+      task: "composeApp:linkReleaseFrameworkIosArm64",
+      project_dir: "./"
+    )
+    build_app(
+      project: "./iosApp/iosApp.xcodeproj",
+      scheme: "iosApp",
+      configuration: "Release",
+      destination: "generic/platform=iOS",
+      allowProvisioningUpdates: true
+    )
+  end
 
 end
 
