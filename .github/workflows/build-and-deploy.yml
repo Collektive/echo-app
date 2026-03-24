@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v5
+        uses: gradle/actions/wrapper-validation@v6
         with:
           allow-snapshots: false
           min-wrapper-count: 1
