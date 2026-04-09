@@ -101,7 +101,7 @@ jobs:
       - name: Download Android APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: android-release-apk
+          name: echo-app-apk
           path: composeApp/build/outputs/apk/release/
       - name: Install Node
         uses: actions/setup-node@v6.3.0
@@ -126,7 +126,7 @@ jobs:
 #      - name: Download Android AAB artifact
 #        uses: actions/download-artifact@v4
 #        with:
-#          name: android-release-aab
+#          name: echo-app-aab
 #          path: composeApp/build/outputs/bundle/release/
 #      - name: Set up Ruby & Fastlane for Play Store Deploy
 #        uses: ruby/setup-ruby@v1
