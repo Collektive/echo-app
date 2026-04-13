@@ -26,10 +26,11 @@ platform :android do
     )
   end
 
-  lane :deploy do
-    # Uploads the generated AAB to Google Play Console
+  lane :deploy do |options|
+    target_track = options[:track] || 'internal' # ['internal', 'production', 'beta', 'alpha']
+
     upload_to_play_store(
-      track: 'production', # ['internal', 'production', 'beta']
+      track: target_track,
       aab: 'composeApp/build/outputs/bundle/release/composeApp-release.aab',
       json_key_data: ENV['PLAY_STORE_JSON_KEY_DATA']
     )

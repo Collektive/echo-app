@@ -138,7 +138,7 @@ jobs:
 #      - name: Deploy to Google Play Store via Fastlane
 #        #env:
 #        #  PLAY_STORE_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_JSON_KEY }}
-#        run: bundle exec fastlane android deploy
+#        run: bundle exec fastlane android deploy track:internal # default to internal deploy, change this when needed
 
   success:
     runs-on: ubuntu-latest
