@@ -98,7 +98,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download Android APK artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: echo-app-apk
           path: composeApp/build/outputs/apk/release/
@@ -125,7 +125,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
       - name: Download Android AAB artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: echo-app-aab
           path: composeApp/build/outputs/bundle/release/
