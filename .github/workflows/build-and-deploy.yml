@@ -91,7 +91,6 @@ jobs:
       - build-ios
       - build-android
     concurrency:
-      # Only one release job at a time per branch, as only master releases.
       group: release-${{ github.event.number || github.ref }}
     steps:
       - name: Checkout repository
@@ -117,28 +116,27 @@ jobs:
           npm install
           npx semantic-release
 
-###### remove comment when ready to deploy on play store
-#  deploy-play-store:
-#    name: Deploy to Play Store
-#    runs-on: ubuntu-latest
-#    needs: release
-#    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-#      - name: Download Android AAB artifact
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: echo-app-aab
-#          path: composeApp/build/outputs/bundle/release/
-#      - name: Set up Ruby & Fastlane for Play Store Deploy
-#        uses: ruby/setup-ruby@v1
-#        with:
-#          bundler-cache: true
-#      - name: Deploy to Google Play Store via Fastlane
-#        #env:
-#        #  PLAY_STORE_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_JSON_KEY }}
-#        run: bundle exec fastlane android deploy track:internal # default to internal deploy, change this when needed
+  deploy-play-store:
+    name: Deploy to Play Store
+    runs-on: ubuntu-latest
+    needs: release
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download Android AAB artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: echo-app-aab
+          path: composeApp/build/outputs/bundle/release/
+      - name: Set up Ruby & Fastlane for Play Store Deploy
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Deploy to Google Play Store via Fastlane
+        env:
+          PLAY_STORE_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_JSON_KEY }}
+        run: bundle exec fastlane android deploy track:internal # default to internal deploy, change this when needed
 
   success:
     runs-on: ubuntu-latest
@@ -146,7 +144,7 @@ jobs:
       - build-android
       - build-ios
       - release
-      #- deploy-play-store
+      - deploy-play-store
     if: >-
       always() && (
         contains(join(needs.*.result, ','), 'failure')
