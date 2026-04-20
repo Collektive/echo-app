@@ -2,10 +2,8 @@ var prepareCmd = `
 echo version=\${nextRelease.version} > gradle.properties
 echo VERSION="\${nextRelease.version}" > .env
 echo PROJECT_NAME=$(grep -Po 'rootProject\\s*\\.\\s*name\\s*=\\s*"\\K[\\w-]+(?=")' settings.gradle.kts) >> .env
-docker compose build
 `
 var publishCmd = `
-docker compose push
 git add gradle.properties .env
 git commit -m "chore(release): update gradle.properties .env versions to \${nextRelease.version} [skip ci]"
 git push
@@ -18,7 +16,7 @@ config.plugins.push(
     }],
     ["@semantic-release/github", {
         "assets": [
-            { "path": "charts.tar.zst" },
+            { "path": "composeApp/build/outputs/apk/release/*.apk", "label": "Android Release APK" }
          ]
     }],
     "@semantic-release/git",

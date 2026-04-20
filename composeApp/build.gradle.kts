@@ -82,8 +82,20 @@ android {
         applicationId = "it.unibo.collektive.echo"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("VERSION_NAME") ?: "1.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystoreFilePath = System.getenv("KEYSTORE_FILE")
+            if (keystoreFilePath != null) {
+                storeFile = file(keystoreFilePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     packaging {
@@ -95,6 +107,12 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            val keystoreFilePath = System.getenv("KEYSTORE_FILE")
+            signingConfig = if (keystoreFilePath != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
