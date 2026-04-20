@@ -94,7 +94,7 @@ jobs:
       group: release-${{ github.event.number || github.ref }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Download Android APK artifact
@@ -123,7 +123,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Download Android AAB artifact
         uses: actions/download-artifact@v8
         with:
