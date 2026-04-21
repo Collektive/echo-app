@@ -101,7 +101,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.DEPLOYMENT_TOKEN }}
       - name: Download Android APK artifact
         uses: actions/download-artifact@v8
         with:
