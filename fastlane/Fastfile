@@ -14,14 +14,9 @@ platform :android do
   end
 
   lane :release do
-    # Builds the APK used for the GitHub Release
+    # Build both release artifacts in one Gradle invocation to reduce startup overhead in CI
     gradle(
-      task: "composeApp:assembleRelease",
-      project_dir: "./"
-    )
-    # Builds the Android App Bundle (AAB) used for the Play Store
-    gradle(
-      task: "composeApp:bundleRelease",
+      tasks: ["composeApp:assembleRelease", "composeApp:bundleRelease"],
       project_dir: "./"
     )
   end
