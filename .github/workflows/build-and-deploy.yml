@@ -85,13 +85,22 @@ jobs:
           path: composeApp/build/outputs/bundle/release/*.aab
 
   release:
-    name: GitHub Release
     runs-on: ubuntu-latest
     needs:
       - build-ios
       - build-android
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     concurrency:
       group: release-${{ github.event.number || github.ref }}
+    if: >-
+      !github.event.repository.fork
+      && (
+        github.event_name != 'pull_request'
+        || github.event.pull_request.head.repo.full_name == github.repository
+      )
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -119,7 +128,9 @@ jobs:
   deploy-play-store:
     name: Deploy to Play Store
     runs-on: ubuntu-latest
-    needs: release
+    needs:
+      - build-android
+      - release
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout repository
