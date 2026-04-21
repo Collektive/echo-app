@@ -24,6 +24,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+      - name: Cache Kotlin/Native
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-konan-
       - name: Set up Ruby & Fastlane
         uses: ruby/setup-ruby@v1
         with:
@@ -53,6 +60,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+      - name: Cache Kotlin/Native
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-konan-
       - name: Set up Ruby w/Fastlane
         uses: ruby/setup-ruby@v1
         with:
@@ -103,6 +117,7 @@ jobs:
         with:
           submodules: recursive
           token: ${{ secrets.DEPLOYMENT_TOKEN }}
+          fetch-depth: 0
       - name: Download Android APK artifact
         uses: actions/download-artifact@v8
         with:
