@@ -1,5 +1,5 @@
 var prepareCmd = `
-echo version=\${nextRelease.version} > gradle.properties
+perl -0pi -e 's/^version=.*/version=\${nextRelease.version}/m' gradle.properties
 echo VERSION="\${nextRelease.version}" > .env
 echo PROJECT_NAME=$(grep -Po 'rootProject\\s*\\.\\s*name\\s*=\\s*"\\K[\\w-]+(?=")' settings.gradle.kts) >> .env
 `

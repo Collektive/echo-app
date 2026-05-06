@@ -1,3 +1,58 @@
+require 'base64'
+require 'json'
+
+def parse_json_document(value)
+  JSON.parse(value)
+rescue JSON::ParserError, TypeError
+  nil
+end
+
+def play_store_service_account?(parsed)
+  parsed.is_a?(Hash) &&
+    parsed['type'] == 'service_account' &&
+    !parsed['client_email'].to_s.empty? &&
+    !parsed['private_key'].to_s.empty?
+end
+
+def normalize_play_store_json(raw_value)
+  candidates = [raw_value.to_s.strip].reject(&:empty?)
+
+  begin
+    decoded = Base64.strict_decode64(raw_value.to_s.gsub(/\s+/, ''))
+    candidates << decoded.strip unless decoded.to_s.strip.empty?
+  rescue ArgumentError
+    nil
+  end
+
+  candidates.each do |candidate|
+    parsed = parse_json_document(candidate)
+    return candidate if play_store_service_account?(parsed)
+
+    if parsed.is_a?(String)
+      nested = parse_json_document(parsed)
+      return parsed if play_store_service_account?(nested)
+    end
+  end
+
+  FastlaneCore::UI.user_error!(
+    "PLAY_STORE_JSON_KEY / PLAY_STORE_JSON_KEY_DATA must contain the Google Play service account JSON or its base64-encoded contents."
+  )
+end
+
+def play_store_credentials_options
+  key_path = ENV['PLAY_STORE_JSON_KEY_PATH'].to_s.strip
+  return { json_key: key_path } unless key_path.empty?
+
+  raw_key = ENV['PLAY_STORE_JSON_KEY_DATA'] || ENV['PLAY_STORE_JSON_KEY']
+  if raw_key.to_s.strip.empty?
+    FastlaneCore::UI.user_error!(
+      "Missing Play Store credentials. Set PLAY_STORE_JSON_KEY_PATH or provide PLAY_STORE_JSON_KEY / PLAY_STORE_JSON_KEY_DATA."
+    )
+  end
+
+  { json_key_data: normalize_play_store_json(raw_key) }
+end
+
 platform :android do
   lane :lint do
     gradle(
@@ -14,14 +69,9 @@ platform :android do
   end
 
   lane :release do
-    # Builds the APK used for the GitHub Release
+    # Build both release artifacts in one Gradle invocation to reduce startup overhead in CI
     gradle(
-      task: "composeApp:assembleRelease",
-      project_dir: "./"
-    )
-    # Builds the Android App Bundle (AAB) used for the Play Store
-    gradle(
-      task: "composeApp:bundleRelease",
+      tasks: ["composeApp:assembleRelease", "composeApp:bundleRelease"],
       project_dir: "./"
     )
   end
@@ -32,7 +82,7 @@ platform :android do
     upload_to_play_store(
       track: target_track,
       aab: 'composeApp/build/outputs/bundle/release/composeApp-release.aab',
-      json_key_data: ENV['PLAY_STORE_JSON_KEY_DATA']
+      **play_store_credentials_options
     )
   end
 end
@@ -61,4 +111,3 @@ platform :ios do
   end
 
 end
-
