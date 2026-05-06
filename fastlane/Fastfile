@@ -18,7 +18,7 @@ def normalize_play_store_json(raw_value)
   candidates = [raw_value.to_s.strip].reject(&:empty?)
 
   begin
-    decoded = Base64.strict_decode64(raw_value.to_s.strip)
+    decoded = Base64.strict_decode64(raw_value.to_s.gsub(/\s+/, ''))
     candidates << decoded.strip unless decoded.to_s.strip.empty?
   rescue ArgumentError
     nil

@@ -151,7 +151,7 @@ jobs:
 
             candidates = [raw]
             begin
-              decoded = Base64.strict_decode64(raw).strip
+              decoded = Base64.strict_decode64(raw.gsub(/\s+/, "")).strip
               candidates << decoded unless decoded.empty?
             rescue ArgumentError
               nil
