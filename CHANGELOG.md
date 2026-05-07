@@ -1,3 +1,14 @@
+## [1.0.2](https://github.com/Collektive/echo-app/compare/1.0.1...1.0.2) (2026-05-07)
+
+### Dependency updates
+
+* **core-deps:** update dependency org.jetbrains.kotlinx:kotlinx-datetime to v0.8.0-0.6.x-compat ([5b547a5](https://github.com/Collektive/echo-app/commit/5b547a5b0b084bde26ff4f48c0a882acf1833881))
+* **deps:** update plugin kotlin-qa to v1.6.1 ([df77780](https://github.com/Collektive/echo-app/commit/df777808bb8575a7b19be22c7d6851c74770fe39))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.1 [skip ci] ([183d6b0](https://github.com/Collektive/echo-app/commit/183d6b0e47a5630eb940fd4cb4c4801063a85cc6))
+
 ## [1.0.1](https://github.com/Collektive/echo-app/compare/1.0.0...1.0.1) (2026-05-06)
 
 ### Dependency updates
