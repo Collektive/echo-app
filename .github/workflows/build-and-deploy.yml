@@ -7,9 +7,6 @@ jobs:
   build-ios:
     name: Build iOS
     runs-on: macos-latest
-    concurrency:
-      group: ios-${{ github.workflow }}-${{ github.event.number || github.ref }}
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -36,9 +33,6 @@ jobs:
   build-android:
     name: Compile Android
     runs-on: ubuntu-latest
-    concurrency:
-      group: android-${{ github.workflow }}-${{ github.event.number || github.ref }}
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -93,8 +87,6 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-    concurrency:
-      group: release-${{ github.event.number || github.ref }}
     if: >
       github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
@@ -108,13 +100,10 @@ jobs:
         with:
           name: echo-app-apk
           path: composeApp/build/outputs/apk/release/
-      - name: Find the version of Node from package.json
-        id: node-version
-        run: echo "version=$(jq -r .engines.node package.json)" >> $GITHUB_OUTPUT
       - name: Install Node
         uses: actions/setup-node@v6.4.0
         with:
-          node-version: ${{ steps.node-version.outputs.version }}
+          node-version-file: package.json
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
