@@ -1,3 +1,13 @@
+## [1.0.4](https://github.com/Collektive/echo-app/compare/1.0.3...1.0.4) (2026-05-08)
+
+### Dependency updates
+
+* **core-deps:** update collektive to v28.2.5 ([312ab63](https://github.com/Collektive/echo-app/commit/312ab63935c5f3673ccdd75018552596b446731a))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.3 [skip ci] ([1551112](https://github.com/Collektive/echo-app/commit/155111245d7276ad2ee2ca710b5b7f4f1605942d))
+
 ## [1.0.3](https://github.com/Collektive/echo-app/compare/1.0.2...1.0.3) (2026-05-08)
 
 ### Bug Fixes
