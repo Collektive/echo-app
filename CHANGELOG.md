@@ -1,3 +1,33 @@
+## [1.0.2](https://github.com/Collektive/echo-app/compare/1.0.1...1.0.2) (2026-05-07)
+
+### Dependency updates
+
+* **core-deps:** update dependency org.jetbrains.kotlinx:kotlinx-datetime to v0.8.0-0.6.x-compat ([5b547a5](https://github.com/Collektive/echo-app/commit/5b547a5b0b084bde26ff4f48c0a882acf1833881))
+* **deps:** update plugin kotlin-qa to v1.6.1 ([df77780](https://github.com/Collektive/echo-app/commit/df777808bb8575a7b19be22c7d6851c74770fe39))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.1 [skip ci] ([183d6b0](https://github.com/Collektive/echo-app/commit/183d6b0e47a5630eb940fd4cb4c4801063a85cc6))
+
+## [1.0.1](https://github.com/Collektive/echo-app/compare/1.0.0...1.0.1) (2026-05-06)
+
+### Dependency updates
+
+* **core-deps:** update collektive to v28.2.4 ([7029a77](https://github.com/Collektive/echo-app/commit/7029a779142840326ac94cbeb489d6133632f085))
+* **core-deps:** update kotlin monorepo to v2.3.21 ([1650990](https://github.com/Collektive/echo-app/commit/16509904621ea9cde218cd04a5f7e5ab966511e5))
+* **deps:** update agp to v9.2.1 ([a92b881](https://github.com/Collektive/echo-app/commit/a92b8810f53090f673f622ef8ed5863b31316111))
+* **deps:** update dependency fastlane to v2.233.1 ([370e476](https://github.com/Collektive/echo-app/commit/370e47690bf6c1122996ecfd92f8159586243201))
+* **deps:** update gradle to v9.5.0 ([348226e](https://github.com/Collektive/echo-app/commit/348226e13e74ca4a98577f3d27bed7722c90ef9d))
+* **deps:** update plugin kotlin-qa to v1.5.1 ([f9d9f6f](https://github.com/Collektive/echo-app/commit/f9d9f6f020ee33f3416cfa52f8a0464dc2d97f91))
+
+### Bug Fixes
+
+* **ci:** credential handling for play store ([#63](https://github.com/Collektive/echo-app/issues/63)) ([a6b6c9c](https://github.com/Collektive/echo-app/commit/a6b6c9caa65cec434e79bb7c5133ad226ad8dc62))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.0 [skip ci] ([baca8fd](https://github.com/Collektive/echo-app/commit/baca8fd4958f98f85f9517603dfe5c8df58413f2))
+
 ## 1.0.0 (2026-04-21)
 
 ### Features
