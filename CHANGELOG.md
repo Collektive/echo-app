@@ -1,3 +1,13 @@
+## [1.0.3](https://github.com/Collektive/echo-app/compare/1.0.2...1.0.3) (2026-05-08)
+
+### Bug Fixes
+
+* **ci:** remove concurrency settings from CI workflow ([#73](https://github.com/Collektive/echo-app/issues/73)) ([2f02a7d](https://github.com/Collektive/echo-app/commit/2f02a7d6fc7e14ebb120127a20c7c2fdbb67202f))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.2 [skip ci] ([482a57b](https://github.com/Collektive/echo-app/commit/482a57b724ceda06e7a35a04d4e6ef96ba7bdb4a))
+
 ## [1.0.2](https://github.com/Collektive/echo-app/compare/1.0.1...1.0.2) (2026-05-07)
 
 ### Dependency updates
