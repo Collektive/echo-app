@@ -1,3 +1,20 @@
+## [1.0.5](https://github.com/Collektive/echo-app/compare/1.0.4...1.0.5) (2026-05-19)
+
+### Dependency updates
+
+* **deps:** update composemultiplatform to v1.11.0 ([7677434](https://github.com/Collektive/echo-app/commit/7677434bd917215fb0a48c2ba7251ae723f60cc7))
+* **deps:** update dependency fastlane to v2.234.0 ([239c818](https://github.com/Collektive/echo-app/commit/239c8186e16a4d01849cfaaa3049fdda86cba1b0))
+* **deps:** update gradle to v9.5.1 ([8167bf2](https://github.com/Collektive/echo-app/commit/8167bf21f97fc62f0e66f99b12ed8744d42d7874))
+* **deps:** update plugin kotlin-qa to v1.6.2 ([e5f977c](https://github.com/Collektive/echo-app/commit/e5f977c7acc9fd1caf52d616ab67ebd364799b1c))
+
+### Bug Fixes
+
+* **ci:** simplify play store credential in deployment workflow ([#80](https://github.com/Collektive/echo-app/issues/80)) ([bc0cb1a](https://github.com/Collektive/echo-app/commit/bc0cb1ad160798fb39fca054b47e0580498a49af))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.4 [skip ci] ([e5324bc](https://github.com/Collektive/echo-app/commit/e5324bcaa1b619654d265022cf70e218d22832af))
+
 ## [1.0.4](https://github.com/Collektive/echo-app/compare/1.0.3...1.0.4) (2026-05-08)
 
 ### Dependency updates
