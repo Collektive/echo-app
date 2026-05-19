@@ -130,50 +130,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - name: Prepare Play Store credentials
-        env:
-          PLAY_STORE_JSON_KEY: ${{ secrets.PLAY_STORE_JSON_KEY }}
-        run: |
-          bundle exec ruby -rbase64 -rjson -e '
-            raw = ENV.fetch("PLAY_STORE_JSON_KEY", "").strip
-            abort("PLAY_STORE_JSON_KEY is empty") if raw.empty?
-
-            candidates = [raw]
-            begin
-              decoded = Base64.strict_decode64(raw.gsub(/\s+/, "")).strip
-              candidates << decoded unless decoded.empty?
-            rescue ArgumentError
-              nil
-            end
-
-            json = candidates.lazy.map do |candidate|
-              begin
-                parsed = JSON.parse(candidate)
-                if parsed.is_a?(String)
-                  nested = JSON.parse(parsed)
-                  [parsed, nested]
-                else
-                  [candidate, parsed]
-                end
-              rescue JSON::ParserError
-                nil
-              end
-            end.find do |entry|
-              next false unless entry
-
-              parsed = entry[1]
-              parsed.is_a?(Hash) &&
-                parsed["type"] == "service_account" &&
-                !parsed["client_email"].to_s.empty? &&
-                !parsed["private_key"].to_s.empty?
-            end&.first
-
-            abort("PLAY_STORE_JSON_KEY must contain raw service account JSON or its base64-encoded contents") unless json
-            File.write("play-store-key.json", json + "\n")
-          '
       - name: Deploy to Google Play Store via Fastlane
         env:
-          PLAY_STORE_JSON_KEY_PATH: ${{ github.workspace }}/play-store-key.json
+          PLAY_STORE_JSON_KEY: ${{ secrets.PLAY_STORE_JSON_KEY }}
         run: bundle exec fastlane android deploy track:internal # default to internal deploy, change this when needed
 
   success:
