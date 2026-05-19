@@ -2,6 +2,8 @@ require 'base64'
 require 'json'
 require 'tmpdir'
 
+ANDROID_PACKAGE_NAME = 'it.unibo.collektive.echo'
+
 def parse_json_document(value)
   JSON.parse(value)
 rescue JSON::ParserError, TypeError
@@ -13,6 +15,35 @@ def play_store_service_account?(parsed)
     parsed['type'] == 'service_account' &&
     !parsed['client_email'].to_s.empty? &&
     !parsed['private_key'].to_s.empty?
+end
+
+def summarize_play_store_json_candidate(candidate)
+  parsed = parse_json_document(candidate)
+
+  case parsed
+  when Hash
+    keys = parsed.keys.map(&:to_s).sort
+    missing_requirements = []
+    missing_requirements << 'type=service_account' unless parsed['type'] == 'service_account'
+    missing_requirements << 'client_email' if parsed['client_email'].to_s.empty?
+    missing_requirements << 'private_key' if parsed['private_key'].to_s.empty?
+
+    summary = "JSON object keys: #{keys.first(12).join(', ')}"
+    summary += ', ...' if keys.length > 12
+    summary += "; missing #{missing_requirements.join(', ')}" unless missing_requirements.empty?
+    if parsed.key?('web') || parsed.key?('installed')
+      summary += '; looks like OAuth client credentials, not a service account key'
+    end
+    summary
+  when String
+    'JSON string wrapper'
+  when Array
+    'JSON array'
+  when NilClass
+    'not JSON'
+  else
+    "JSON #{parsed.class}"
+  end
 end
 
 def add_play_store_json_candidate(candidates, value)
@@ -53,11 +84,13 @@ end
 
 def normalize_play_store_json(raw_value)
   candidates = []
+  summaries = []
   add_play_store_json_candidate(candidates, raw_value)
 
   candidates.each do |candidate|
     parsed = parse_json_document(candidate)
     return JSON.generate(parsed) if play_store_service_account?(parsed)
+    summaries << summarize_play_store_json_candidate(candidate)
 
     if parsed.is_a?(String)
       add_play_store_json_candidate(candidates, parsed)
@@ -71,13 +104,15 @@ def normalize_play_store_json(raw_value)
   end
 
   FastlaneCore::UI.user_error!(
-    "PLAY_STORE_JSON_KEY / PLAY_STORE_JSON_KEY_DATA must contain the Google Play service account JSON or its base64-encoded contents."
+    "PLAY_STORE_JSON_KEY / PLAY_STORE_JSON_KEY_DATA must contain the Google Play service account JSON or its base64-encoded contents. " \
+    "Safe parse summary: #{summaries.uniq.first(5).join(' | ')}"
   )
 end
 
 def write_play_store_json_key(raw_value)
   key_path = File.join(Dir.tmpdir, "echo-play-store-key-#{Process.pid}.json")
   File.write(key_path, normalize_play_store_json(raw_value) + "\n")
+  File.chmod(0o600, key_path)
   key_path
 end
 
@@ -123,6 +158,7 @@ platform :android do
 
     upload_to_play_store(
       track: target_track,
+      package_name: ANDROID_PACKAGE_NAME,
       aab: 'composeApp/build/outputs/bundle/release/composeApp-release.aab',
       **play_store_credentials_options
     )
