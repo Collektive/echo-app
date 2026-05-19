@@ -1,5 +1,6 @@
 require 'base64'
 require 'json'
+require 'tmpdir'
 
 def parse_json_document(value)
   JSON.parse(value)
@@ -14,29 +15,70 @@ def play_store_service_account?(parsed)
     !parsed['private_key'].to_s.empty?
 end
 
-def normalize_play_store_json(raw_value)
-  candidates = [raw_value.to_s.strip].reject(&:empty?)
+def add_play_store_json_candidate(candidates, value)
+  candidate = value.to_s.strip
+  candidate = candidate.sub(/\A(?:export\s+)?PLAY_STORE_JSON_KEY(?:_DATA)?\s*=\s*/, '').strip
 
-  begin
-    decoded = Base64.strict_decode64(raw_value.to_s.gsub(/\s+/, ''))
-    candidates << decoded.strip unless decoded.to_s.strip.empty?
-  rescue ArgumentError
-    nil
+  variants = [candidate]
+  if (candidate.start_with?('"') && candidate.end_with?('"')) ||
+     (candidate.start_with?("'") && candidate.end_with?("'"))
+    variants << candidate[1...-1].strip
   end
+
+  variants.each do |variant|
+    candidates << variant unless variant.empty? || candidates.include?(variant)
+  end
+end
+
+def base64_decode_play_store_json_candidate(candidate)
+  compact = candidate.to_s.gsub(/\s+/, '')
+  return nil if compact.empty?
+
+  padded = compact + ('=' * ((4 - compact.length % 4) % 4))
+
+  [compact, padded].uniq.each do |value|
+    begin
+      return Base64.strict_decode64(value)
+    rescue ArgumentError
+      begin
+        return Base64.urlsafe_decode64(value)
+      rescue ArgumentError
+        nil
+      end
+    end
+  end
+
+  nil
+end
+
+def normalize_play_store_json(raw_value)
+  candidates = []
+  add_play_store_json_candidate(candidates, raw_value)
 
   candidates.each do |candidate|
     parsed = parse_json_document(candidate)
-    return candidate if play_store_service_account?(parsed)
+    return JSON.generate(parsed) if play_store_service_account?(parsed)
 
     if parsed.is_a?(String)
-      nested = parse_json_document(parsed)
-      return parsed if play_store_service_account?(nested)
+      add_play_store_json_candidate(candidates, parsed)
+    elsif parsed.is_a?(Hash)
+      %w[PLAY_STORE_JSON_KEY PLAY_STORE_JSON_KEY_DATA json_key_data json_key].each do |key|
+        add_play_store_json_candidate(candidates, parsed[key]) if parsed.key?(key)
+      end
     end
+
+    add_play_store_json_candidate(candidates, base64_decode_play_store_json_candidate(candidate))
   end
 
   FastlaneCore::UI.user_error!(
     "PLAY_STORE_JSON_KEY / PLAY_STORE_JSON_KEY_DATA must contain the Google Play service account JSON or its base64-encoded contents."
   )
+end
+
+def write_play_store_json_key(raw_value)
+  key_path = File.join(Dir.tmpdir, "echo-play-store-key-#{Process.pid}.json")
+  File.write(key_path, normalize_play_store_json(raw_value) + "\n")
+  key_path
 end
 
 def play_store_credentials_options
@@ -50,7 +92,7 @@ def play_store_credentials_options
     )
   end
 
-  { json_key_data: normalize_play_store_json(raw_key) }
+  { json_key: write_play_store_json_key(raw_key) }
 end
 
 platform :android do
