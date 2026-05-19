@@ -1,3 +1,13 @@
+## [1.0.6](https://github.com/Collektive/echo-app/compare/1.0.5...1.0.6) (2026-05-19)
+
+### Bug Fixes
+
+* **ci:** add fail information ([4ae32d1](https://github.com/Collektive/echo-app/commit/4ae32d1a622724dd24c22dcd628f5cae6e76207d))
+
+### General maintenance
+
+* **release:** update gradle.properties .env versions to 1.0.5 [skip ci] ([ff90fc8](https://github.com/Collektive/echo-app/commit/ff90fc867c1b5827613cf4b97a1392b173cb1735))
+
 ## [1.0.5](https://github.com/Collektive/echo-app/compare/1.0.4...1.0.5) (2026-05-19)
 
 ### Dependency updates
