@@ -21,7 +21,7 @@ ktilint = "14.2.0"
 logging = "2.1.1"
 materialIconsExtended = "1.7.3"
 permissionsCompose = "0.20.1"
-playServicesLocation = "21.3.0"
+playServicesLocation = "21.4.0"
 
 [libraries]
 collektive-dsl = { module = "it.unibo.collektive:collektive-dsl", version.ref = "collektive" }
