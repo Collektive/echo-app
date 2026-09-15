@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '17.0.20+101'
           cache: 'gradle'
       - name: Set up Ruby & Fastlane
         uses: ruby/setup-ruby@v1
@@ -45,7 +45,7 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '17.0.20+101'
           cache: 'gradle'
       - name: Set up Ruby w/Fastlane
         uses: ruby/setup-ruby@v1
